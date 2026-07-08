@@ -556,6 +556,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
       <button class="nav-item" data-target="t11"><span class="num">11</span><span class="nav-label">Modern C++ Essentials</span><span class="nav-check" data-check="t11">✓</span></button>
       <button class="nav-item" data-target="t12"><span class="num">12</span><span class="nav-label">Data Structures & Algorithms</span><span class="nav-check" data-check="t12">✓</span></button>
       <button class="nav-item" data-target="t13"><span class="num">13</span><span class="nav-label">Design Patterns</span><span class="nav-check" data-check="t13">✓</span></button>
+      <button class="nav-item" data-target="t14"><span class="num">14</span><span class="nav-label">Bit Manipulation</span><span class="nav-check" data-check="t14">✓</span></button>
+      <button class="nav-item" data-target="t15"><span class="num">15</span><span class="nav-label">Embedded Systems Basics</span><span class="nav-check" data-check="t15">✓</span></button>
     </nav>
 
     <!-- CONTENT -->
@@ -7365,6 +7367,690 @@ Click count: 2</div>
 
 </section>
 
+<section class="topic" id="t14">
+  <div class="topic-header">
+    <span class="topic-num">14</span>
+    <h2>Bit Manipulation</h2>
+  </div>
+  <p>
+    Everything so far has worked at the level of objects, containers, and abstractions. Bit
+    manipulation takes you one level down — to the raw 0s and 1s that every variable is actually
+    made of. This is the language you'll speak constantly once you move into embedded systems,
+    because on a microcontroller a single 32-bit register can control dozens of independent
+    hardware features, one bit at a time. Master this module and register-level programming stops
+    looking like magic.
+  </p>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">1. The Bitwise Operators</h3>
+  <p>
+    Think of a byte as a row of 8 light switches, each either OFF (0) or ON (1). Bitwise operators
+    let you flip, combine, or inspect those switches directly, without ever touching the switches
+    around them.
+  </p>
+  <table>
+    <thead><tr><th>Operator</th><th>Name</th><th>Rule</th><th>Typical use</th></tr></thead>
+    <tbody>
+      <tr><td><code>&amp;</code></td><td>AND</td><td>1 only if both bits are 1</td><td>Clearing / checking bits</td></tr>
+      <tr><td><code>|</code></td><td>OR</td><td>1 if either bit is 1</td><td>Setting bits</td></tr>
+      <tr><td><code>^</code></td><td>XOR</td><td>1 only if bits differ</td><td>Toggling bits</td></tr>
+      <tr><td><code>~</code></td><td>NOT</td><td>Flips every bit</td><td>Building masks</td></tr>
+      <tr><td><code>&lt;&lt;</code></td><td>Left shift</td><td>Moves bits left, fills with 0</td><td>Multiplying by 2, positioning a bit</td></tr>
+      <tr><td><code>&gt;&gt;</code></td><td>Right shift</td><td>Moves bits right</td><td>Dividing by 2, extracting a bit</td></tr>
+    </tbody>
+  </table>
+
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>bitwise_basics.cpp</span><span class="lang">C++</span></div>
+    <pre><code>#include &lt;iostream&gt;
+#include &lt;bitset&gt;
+
+int main() {
+    unsigned char a = 0b00001100;   // 12
+    unsigned char b = 0b00001010;   // 10
+
+    std::cout &lt;&lt; "a       = " &lt;&lt; std::bitset&lt;8&gt;(a) &lt;&lt; "\n";
+    std::cout &lt;&lt; "b       = " &lt;&lt; std::bitset&lt;8&gt;(b) &lt;&lt; "\n";
+    std::cout &lt;&lt; "a &amp; b   = " &lt;&lt; std::bitset&lt;8&gt;(a &amp; b) &lt;&lt; "\n";   // 00001000
+    std::cout &lt;&lt; "a | b   = " &lt;&lt; std::bitset&lt;8&gt;(a | b) &lt;&lt; "\n";   // 00001110
+    std::cout &lt;&lt; "a ^ b   = " &lt;&lt; std::bitset&lt;8&gt;(a ^ b) &lt;&lt; "\n";   // 00000110
+    std::cout &lt;&lt; "~a      = " &lt;&lt; std::bitset&lt;8&gt;((unsigned char)~a) &lt;&lt; "\n"; // 11110011
+    std::cout &lt;&lt; "a &lt;&lt; 2  = " &lt;&lt; std::bitset&lt;8&gt;((unsigned char)(a &lt;&lt; 2)) &lt;&lt; "\n"; // 00110000
+    std::cout &lt;&lt; "a &gt;&gt; 2  = " &lt;&lt; std::bitset&lt;8&gt;(a &gt;&gt; 2) &lt;&lt; "\n";   // 00000011
+    return 0;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">a       = 00001100
+b       = 00001010
+a &amp; b   = 00001000
+a | b   = 00001110
+a ^ b   = 00000110
+~a      = 11110011
+a &lt;&lt; 2  = 00110000
+a &gt;&gt; 2  = 00000011</div>
+  </div>
+
+  <h4>Dry Run — <code>a &amp; b</code> bit by bit</h4>
+  <table>
+    <thead><tr><th>Bit position</th><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th></tr></thead>
+    <tbody>
+      <tr><td>a</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td>b</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td></tr>
+      <tr><td>AND result</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Each column is independent — AND never "carries" or "borrows" like arithmetic does. Bit 3 is
+    the only column where both rows are 1, so it's the only 1 in the result.
+  </p>
+
+  <div class="callout tip">
+    <span class="callout-icon">💡</span>
+    <div class="callout-body">
+      <strong>Why embedded engineers live in this table</strong>
+      A single hardware register — say, a GPIO port's data register — is just one byte or word
+      where each bit corresponds to a physical pin. You will never assign a whole new value to
+      such a register carelessly, because that would stomp on pins you didn't mean to touch.
+      Instead you AND, OR, and XOR your way to changing exactly one bit while leaving every other
+      pin's state untouched.
+    </div>
+  </div>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">2. Setting, Clearing, Toggling, and Checking Bits</h3>
+  <p>
+    These four operations are the entire toolkit you need for register-level programming. Each
+    one follows a fixed idiom built from a <strong>mask</strong> — a value with 1s in the
+    positions you care about and 0s everywhere else.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>bit_operations.cpp</span><span class="lang">C++</span></div>
+    <pre><code>#include &lt;iostream&gt;
+#include &lt;bitset&gt;
+
+int main() {
+    uint8_t reg = 0b00000000;   // pretend this is an 8-pin GPIO register
+
+    // ---- SET bit 3 ----
+    reg |= (1 &lt;&lt; 3);            // OR with mask 00001000 forces bit 3 to 1
+    std::cout &lt;&lt; "after SET bit 3:    " &lt;&lt; std::bitset&lt;8&gt;(reg) &lt;&lt; "\n";
+
+    // ---- SET bit 5 too ----
+    reg |= (1 &lt;&lt; 5);
+    std::cout &lt;&lt; "after SET bit 5:    " &lt;&lt; std::bitset&lt;8&gt;(reg) &lt;&lt; "\n";
+
+    // ---- CLEAR bit 3 ----
+    reg &amp;= ~(1 &lt;&lt; 3);           // AND with mask 11110111 forces bit 3 to 0, leaves rest alone
+    std::cout &lt;&lt; "after CLEAR bit 3:  " &lt;&lt; std::bitset&lt;8&gt;(reg) &lt;&lt; "\n";
+
+    // ---- TOGGLE bit 5 ----
+    reg ^= (1 &lt;&lt; 5);            // XOR flips bit 5, whatever it currently is
+    std::cout &lt;&lt; "after TOGGLE bit 5: " &lt;&lt; std::bitset&lt;8&gt;(reg) &lt;&lt; "\n";
+
+    // ---- CHECK bit 5 ----
+    bool isSet = reg &amp; (1 &lt;&lt; 5);
+    std::cout &lt;&lt; "is bit 5 set? " &lt;&lt; std::boolalpha &lt;&lt; isSet &lt;&lt; "\n";
+
+    return 0;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">after SET bit 3:    00001000
+after SET bit 5:    00101000
+after CLEAR bit 3:  00100000
+after TOGGLE bit 5: 00000000
+is bit 5 set? false</div>
+  </div>
+
+  <h4>Step-by-Step Walkthrough</h4>
+  <table>
+    <thead><tr><th>Step</th><th>Operation</th><th>reg before</th><th>reg after</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>reg |= (1&lt;&lt;3)</code></td><td>00000000</td><td>00001000</td></tr>
+      <tr><td>2</td><td><code>reg |= (1&lt;&lt;5)</code></td><td>00001000</td><td>00101000</td></tr>
+      <tr><td>3</td><td><code>reg &amp;= ~(1&lt;&lt;3)</code></td><td>00101000</td><td>00100000</td></tr>
+      <tr><td>4</td><td><code>reg ^= (1&lt;&lt;5)</code></td><td>00100000</td><td>00000000</td></tr>
+      <tr><td>5</td><td><code>reg &amp; (1&lt;&lt;5)</code> (read-only)</td><td>00000000</td><td>00000000 → result 0</td></tr>
+    </tbody>
+  </table>
+  <p>These four lines are effectively a template you'll reuse for the rest of your embedded career:</p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>the_four_idioms.cpp</span><span class="lang">C++</span></div>
+    <pre><code>reg |=  (1 &lt;&lt; n);   // SET bit n
+reg &amp;= ~(1 &lt;&lt; n);   // CLEAR bit n
+reg ^=  (1 &lt;&lt; n);   // TOGGLE bit n
+bool set = reg &amp; (1 &lt;&lt; n);  // CHECK bit n (non-zero means set)</code></pre>
+  </div>
+
+  <div class="callout arch">
+    <span class="callout-icon">🏗️</span>
+    <div class="callout-body">
+      <strong>Real-world embedded context</strong>
+      On an ARM Cortex-M microcontroller, writing <code>GPIOA-&gt;ODR |= (1 &lt;&lt; 5);</code> sets
+      pin PA5 high (this is literally how the classic "blink an LED" program works) without
+      disturbing pins PA0–PA4 or PA6–PA15 that other parts of your firmware might be driving.
+      Some chips go further and give you separate "set" and "clear" registers (e.g. <code>BSRR</code>
+      on STM32) specifically so that this operation is a single atomic hardware write instead of a
+      read-modify-write — important when an interrupt could sneak in between the read and the write.
+    </div>
+  </div>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">3. Bit Masks and Their Applications</h3>
+  <p>
+    A mask is just a number shaped like a stencil. Overlay it on your data with the right operator
+    and only the "cut-out" bits are affected. Masks are how you extract or modify a <em>group</em>
+    of bits at once, not just a single one.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>bit_masks.cpp</span><span class="lang">C++</span></div>
+    <pre><code>#include &lt;iostream&gt;
+#include &lt;bitset&gt;
+
+int main() {
+    // Imagine a status register: bits 0-2 = error code, bit 3 = busy flag, bits 4-7 = channel ID
+    uint8_t status = 0b10110101;
+
+    const uint8_t ERROR_MASK   = 0b00000111;  // lowest 3 bits
+    const uint8_t BUSY_MASK    = 0b00001000;  // bit 3
+    const uint8_t CHANNEL_MASK = 0b11110000;  // top 4 bits
+
+    uint8_t errorCode = status &amp; ERROR_MASK;                 // extract bits 0-2
+    bool    busy      = status &amp; BUSY_MASK;                  // extract bit 3
+    uint8_t channel   = (status &amp; CHANNEL_MASK) &gt;&gt; 4;        // extract bits 4-7, shift down to 0-3
+
+    std::cout &lt;&lt; "status    = " &lt;&lt; std::bitset&lt;8&gt;(status) &lt;&lt; "\n";
+    std::cout &lt;&lt; "errorCode = " &lt;&lt; (int)errorCode &lt;&lt; "\n";   // 5
+    std::cout &lt;&lt; "busy      = " &lt;&lt; std::boolalpha &lt;&lt; busy &lt;&lt; "\n"; // true
+    std::cout &lt;&lt; "channel   = " &lt;&lt; (int)channel &lt;&lt; "\n";     // 11
+    return 0;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">status    = 10110101
+errorCode = 5
+busy      = true
+channel   = 11</div>
+  </div>
+  <p>
+    Notice the pattern for pulling out a multi-bit field: <strong>mask, then shift.</strong>
+    Masking with <code>&amp;</code> zeroes out everything you don't want; shifting with
+    <code>&gt;&gt;</code> slides the field you kept down to start at bit 0 so it reads as a normal
+    small integer.
+  </p>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">4. Common Interview Patterns</h3>
+
+  <h4>Checking if a number is a power of 2</h4>
+  <p>
+    Any power of 2 has exactly one bit set (1, 2, 4, 8, 16 → 0001, 0010, 0100, 1000...). Subtracting
+    1 from a power of 2 flips that single bit off and turns every bit below it on, so ANDing the
+    two together always produces zero — and only a power of 2 has that property.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>power_of_two.cpp</span><span class="lang">C++</span></div>
+    <pre><code>#include &lt;iostream&gt;
+
+bool isPowerOfTwo(unsigned int n) {
+    return n != 0 &amp;&amp; (n &amp; (n - 1)) == 0;
+}
+
+int main() {
+    for (int n : {1, 2, 3, 4, 15, 16, 1024}) {
+        std::cout &lt;&lt; n &lt;&lt; " -&gt; " &lt;&lt; std::boolalpha &lt;&lt; isPowerOfTwo(n) &lt;&lt; "\n";
+    }
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">1 -&gt; true
+2 -&gt; true
+3 -&gt; false
+4 -&gt; true
+15 -&gt; false
+16 -&gt; true
+1024 -&gt; true</div>
+  </div>
+  <p><strong>Dry run for n = 16 (10000):</strong> n − 1 = 15 (01111). 10000 &amp; 01111 = 00000 → zero, so it's a power of 2.
+  <strong>Dry run for n = 15 (01111):</strong> n − 1 = 14 (01110). 01111 &amp; 01110 = 01110 → non-zero, so it's not.</p>
+
+  <h4>Swapping two variables without a temp variable</h4>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>xor_swap.cpp</span><span class="lang">C++</span></div>
+    <pre><code>#include &lt;iostream&gt;
+
+int main() {
+    int a = 5, b = 9;   // 0101, 1001
+    a ^= b;             // a = 0101 ^ 1001 = 1100 (12)
+    b ^= a;             // b = 1001 ^ 1100 = 0101 (5)  -- original a!
+    a ^= b;             // a = 1100 ^ 0101 = 1001 (9)  -- original b!
+    std::cout &lt;&lt; "a=" &lt;&lt; a &lt;&lt; " b=" &lt;&lt; b &lt;&lt; "\n"; // a=9 b=5
+    return 0;
+}</code></pre>
+  </div>
+  <div class="callout warn">
+    <span class="callout-icon">⚠️</span>
+    <div class="callout-body">
+      <strong>Know it, but don't ship it</strong>
+      XOR swap is a classic interview trick, and it's genuinely useful in tight register-only
+      contexts (some CPU ISAs even had an XCHG-free swap idiom baked in). In everyday application
+      code, <code>std::swap(a, b)</code> is clearer, equally fast after optimization, and — unlike
+      the XOR trick — doesn't silently zero both variables if you accidentally call it with
+      <code>a</code> and <code>b</code> being the same variable (<code>a ^= a</code> is always 0).
+    </div>
+  </div>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">5. Bit Fields in C++ Structs</h3>
+  <p>
+    A bit field lets you tell the compiler "this member only needs 3 bits, not a whole 32-bit int,"
+    so several small fields can be packed together into a single word. This mirrors, in C++ syntax,
+    exactly the kind of packed status register you saw in the masking example above.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>bit_fields.cpp</span><span class="lang">C++</span></div>
+    <pre><code>#include &lt;iostream&gt;
+#include &lt;cstdint&gt;
+
+struct StatusRegister {
+    uint8_t errorCode : 3;   // uses 3 bits, values 0-7
+    uint8_t busy      : 1;   // uses 1 bit, values 0-1
+    uint8_t channel   : 4;   // uses 4 bits, values 0-15
+};                            // total: 8 bits = fits in exactly 1 byte
+
+int main() {
+    std::cout &lt;&lt; "sizeof(StatusRegister) = " &lt;&lt; sizeof(StatusRegister) &lt;&lt; " byte(s)\n";
+
+    StatusRegister sr;
+    sr.errorCode = 5;
+    sr.busy      = 1;
+    sr.channel   = 11;
+
+    std::cout &lt;&lt; "errorCode = " &lt;&lt; (int)sr.errorCode &lt;&lt; "\n";
+    std::cout &lt;&lt; "busy      = " &lt;&lt; (int)sr.busy &lt;&lt; "\n";
+    std::cout &lt;&lt; "channel   = " &lt;&lt; (int)sr.channel &lt;&lt; "\n";
+
+    sr.errorCode = 9;   // out of range for 3 bits (max 7) -- silently truncated!
+    std::cout &lt;&lt; "errorCode after overflow assign = " &lt;&lt; (int)sr.errorCode &lt;&lt; "\n"; // 1 (9 mod 8)
+    return 0;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">sizeof(StatusRegister) = 1 byte(s)
+errorCode = 5
+busy      = 1
+channel   = 11
+errorCode after overflow assign = 1</div>
+  </div>
+  <div class="callout danger">
+    <span class="callout-icon">🔴</span>
+    <div class="callout-body">
+      <strong>Gotcha: bit field layout is NOT portable</strong>
+      The C++ standard leaves bit ordering, padding, and cross-compiler layout of bit fields
+      largely implementation-defined. Two different compilers (or the same compiler with a
+      different byte order target) can lay out the exact same struct differently. For real
+      register maps in production firmware, most embedded codebases prefer explicit masks and
+      shifts (as in section 3) or vendor-supplied header macros over bit fields, precisely because
+      masks give you full, portable control over the exact bit layout.
+    </div>
+  </div>
+
+  <div class="callout arch" style="margin-top:2rem">
+    <span class="callout-icon">🧠</span>
+    <div class="callout-body">
+      <strong>Key Takeaways — Bit Manipulation</strong>
+      &amp;, |, ^, ~, &lt;&lt;, &gt;&gt; operate independently on each bit with no carrying between
+      positions. SET uses OR with a mask, CLEAR uses AND with an inverted mask, TOGGLE uses XOR,
+      and CHECK uses AND followed by a truthiness test. Multi-bit fields are extracted with
+      "mask, then shift." <code>n &amp; (n-1) == 0</code> detects powers of two. Bit fields are
+      convenient but not layout-portable — real register-mapping code usually prefers manual
+      masks.
+    </div>
+  </div>
+</section>
+
+<section class="topic" id="t15">
+  <div class="topic-header">
+    <span class="topic-num violet">15</span>
+    <h2>Embedded Systems Basics</h2>
+  </div>
+  <p>
+    Everything in this module builds directly on the bit tricks you just learned. Embedded
+    programming is, at its core, C++ talking directly to physical hardware — no operating system
+    cushioning the interaction, tight memory budgets, and real-world timing deadlines that a
+    desktop application never has to worry about. This is the conceptual foundation that sits
+    underneath every lift controller, sensor node, and IoT device you'll ever work on.
+  </p>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">1. Microcontroller vs. Microprocessor</h3>
+  <p>
+    A useful analogy: a <strong>microprocessor</strong> is like a powerful chef's knife — brilliant
+    at its one job (raw computation) but useless without a fully equipped kitchen (RAM chips,
+    storage, I/O controllers) built around it, the way your desktop CPU needs a motherboard full of
+    supporting chips. A <strong>microcontroller</strong> is a whole compact kitchen in a single
+    drawer — CPU, RAM, flash storage, and I/O peripherals all built onto one chip, ready to run the
+    moment you plug in power.
+  </p>
+  <table>
+    <thead><tr><th>Aspect</th><th>Microprocessor (e.g. Intel/AMD CPU)</th><th>Microcontroller (e.g. STM32, AVR)</th></tr></thead>
+    <tbody>
+      <tr><td>Integration</td><td>CPU only; needs external RAM, storage, I/O chips</td><td>CPU + RAM + Flash + peripherals on one chip</td></tr>
+      <tr><td>Typical use</td><td>General-purpose computing (PCs, servers)</td><td>Dedicated control task (elevator controller, thermostat)</td></tr>
+      <tr><td>Memory</td><td>Gigabytes, external</td><td>Kilobytes to a few MB, on-chip</td></tr>
+      <tr><td>OS</td><td>Full OS (Windows/Linux)</td><td>Often bare-metal or a small RTOS</td></tr>
+      <tr><td>Cost / power</td><td>Higher cost, higher power draw</td><td>Cents to a few dollars, µW to mW range</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">2. GPIO — General Purpose Input/Output</h3>
+  <p>
+    A GPIO pin is a physical leg on the chip that software can configure to either read a voltage
+    (input — e.g. "is this button pressed?") or drive a voltage (output — e.g. "turn this LED on").
+    Each pin's behavior is controlled by writing to specific bits in a handful of hardware
+    registers — this is exactly the bit-masking skill from Module 14 in action.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>gpio_conceptual.cpp</span><span class="lang">C++</span></div>
+    <pre><code>#include &lt;cstdint&gt;
+
+// Simplified stand-in for a memory-mapped GPIO peripheral (see section 7 below).
+struct GPIO_TypeDef {
+    volatile uint32_t MODER;   // mode register:  00=input 01=output per pin (2 bits/pin)
+    volatile uint32_t ODR;     // output data register: 1 bit per pin
+    volatile uint32_t IDR;     // input data register:  1 bit per pin (read-only)
+};
+
+#define GPIOA ((GPIO_TypeDef*)0x40020000)   // real chips place this at a fixed hardware address
+#define LED_PIN 5
+
+void configureLedPin() {
+    GPIOA-&gt;MODER &amp;= ~(0b11 &lt;&lt; (LED_PIN * 2));  // clear the 2 mode bits for pin 5
+    GPIOA-&gt;MODER |=  (0b01 &lt;&lt; (LED_PIN * 2));  // set them to 01 = general-purpose output
+}
+
+void ledOn()  { GPIOA-&gt;ODR |=  (1 &lt;&lt; LED_PIN); }   // drive pin 5 high
+void ledOff() { GPIOA-&gt;ODR &amp;= ~(1 &lt;&lt; LED_PIN); }   // drive pin 5 low
+
+bool buttonPressed() {
+    #define BUTTON_PIN 0
+    return GPIOA-&gt;IDR &amp; (1 &lt;&lt; BUTTON_PIN);            // read pin 0's current voltage level
+}</code></pre>
+  </div>
+  <p>
+    <strong>Walkthrough:</strong> <code>MODER</code> uses 2 bits per pin, so pin 5's bits live at
+    positions 10-11. The line <code>GPIOA-&gt;MODER &amp;= ~(0b11 &lt;&lt; 10)</code> clears those two
+    bits to 00 without touching any other pin's configuration, then the next line ORs in <code>01</code>
+    to select output mode — the same clear-then-set idiom from Module 14, just applied to a 2-bit field
+    instead of a single bit.
+  </p>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">3. Interrupts</h3>
+  <p>
+    Polling means constantly asking "has anything happened yet?" in a loop — wasteful, like
+    repeatedly checking your phone every second for a text. An <strong>interrupt</strong> flips
+    this around: the hardware itself taps the CPU on the shoulder the instant something important
+    happens (a timer expires, a button is pressed, a UART byte arrives), pausing whatever the CPU
+    was doing to run a special function called an <strong>ISR</strong> (Interrupt Service Routine).
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>isr_pattern.cpp</span><span class="lang">C++</span></div>
+    <pre><code>#include &lt;cstdint&gt;
+
+volatile bool buttonEventFlag = false;   // shared between ISR and main loop -- must be volatile
+
+// Naming and exact signature are vendor-specific; this shows the shape every ISR takes.
+extern "C" void EXTI0_IRQHandler() {
+    // 1. Clear the hardware "pending" bit first, or the interrupt re-fires immediately.
+    // 2. Keep this function as SHORT as possible -- no printf, no malloc, no blocking calls.
+    buttonEventFlag = true;
+}
+
+int main() {
+    // ... hardware init, then enable the interrupt ...
+    while (true) {
+        if (buttonEventFlag) {
+            buttonEventFlag = false;
+            // do the real, possibly slow work here, OUTSIDE the ISR
+        }
+    }
+}</code></pre>
+  </div>
+  <div class="callout danger">
+    <span class="callout-icon">🔴</span>
+    <div class="callout-body">
+      <strong>The golden rule of ISRs</strong>
+      Keep them short. An ISR runs with (often) other interrupts disabled or deferred, so a slow
+      ISR delays every other time-critical event in the system. The standard pattern — set a flag
+      or push to a small queue inside the ISR, then do the actual work in the main loop or a task —
+      exists specifically to keep ISR execution time near-zero.
+    </div>
+  </div>
+  <p>
+    <strong>Priority:</strong> real chips support multiple interrupt sources with configurable
+    priority levels, so a higher-priority interrupt (say, a safety-critical overcurrent sensor) can
+    preempt a lower-priority one (say, a UART receive) that's already executing. Getting priority
+    levels wrong is a classic source of embedded bugs — a low-priority ISR can starve a
+    high-priority one if priorities are assigned backwards.
+  </p>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">4. Timers and Counters</h3>
+  <p>
+    A hardware timer is a register that automatically increments on every clock tick, entirely
+    independent of your program's logic — like a metronome ticking in the background no matter
+    what else the CPU is doing. When the count reaches a configured value, it can trigger an
+    interrupt, toggle a pin, or simply be read by software.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>timer_concept.cpp</span><span class="lang">C++</span></div>
+    <pre><code>// Conceptual: configure a timer to interrupt every 1 millisecond
+struct Timer {
+    volatile uint32_t PSC;   // prescaler: divides the input clock down
+    volatile uint32_t ARR;   // auto-reload value: count target before reset/interrupt
+    volatile uint32_t CNT;   // current count value
+};
+
+void configureMillisecondTick(Timer* tim, uint32_t sysClockHz) {
+    tim-&gt;PSC = (sysClockHz / 1000000) - 1;   // scale clock down to 1 MHz (1 tick = 1 microsecond)
+    tim-&gt;ARR = 1000 - 1;                     // 1000 microsecond ticks = 1 millisecond, then reset
+    // enabling the timer and its interrupt is chip-specific register configuration
+}</code></pre>
+  </div>
+  <p>
+    This is exactly how firmware measures elapsed time, generates precise delays, produces PWM
+    (Pulse Width Modulation) signals for motor speed control, and drives the periodic "tick" that
+    an RTOS scheduler relies on — all without the CPU ever sitting in a busy-wait loop.
+  </p>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">5. ADC and DAC</h3>
+  <p>
+    The real world is analog — temperature, voltage, sound are all continuous signals — but a
+    microcontroller only understands discrete digital numbers. An <strong>ADC</strong>
+    (Analog-to-Digital Converter) is the translator that samples a voltage and hands your code a
+    number representing it. A <strong>DAC</strong> (Digital-to-Analog Converter) works in reverse,
+    turning a number back into a real voltage, for example to drive a speaker or an analog gauge.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>adc_concept.cpp</span><span class="lang">C++</span></div>
+    <pre><code>// A 12-bit ADC reports values 0-4095 for an input voltage between 0V and Vref (often 3.3V)
+uint16_t rawReading = readAdcChannel(0);            // e.g. returns 2048
+float voltage = (rawReading / 4095.0f) * 3.3f;      // convert to a real-world voltage (~1.65V)</code></pre>
+  </div>
+  <p>
+    The resolution (number of bits) determines precision: an 8-bit ADC only distinguishes 256
+    voltage levels, while a 12-bit ADC distinguishes 4096 — the difference between a coarse
+    thermometer and a precise one, using the exact same underlying voltage range.
+  </p>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">6. UART, SPI, and I2C — Serial Communication Protocols</h3>
+  <p>
+    These three protocols are how a microcontroller talks to sensors, displays, and other chips.
+    They differ in wiring, speed, and how many devices can share the same bus.
+  </p>
+  <table>
+    <thead><tr><th>Protocol</th><th>Wires</th><th>Devices per bus</th><th>Typical use</th></tr></thead>
+    <tbody>
+      <tr><td>UART</td><td>2 (TX, RX) + ground</td><td>Point-to-point (1-to-1)</td><td>Debug console, GPS module, simple modems</td></tr>
+      <tr><td>SPI</td><td>4 (MOSI, MISO, SCK, CS)</td><td>Multiple, one Chip-Select per device</td><td>SD cards, high-speed sensors, displays</td></tr>
+      <tr><td>I2C</td><td>2 (SDA, SCL) shared</td><td>Multiple, addressed on the same 2 wires</td><td>Low-speed sensors, EEPROMs, RTCs</td></tr>
+    </tbody>
+  </table>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>protocol_pseudocode.cpp</span><span class="lang">C++</span></div>
+    <pre><code>// UART -- simple byte-stream, no addressing, both sides must agree on baud rate beforehand
+void uartSendByte(uint8_t b) {
+    while (!uartTransmitBufferEmpty()) {}   // wait until hardware is ready
+    UART-&gt;DATA_REGISTER = b;
+}
+
+// SPI -- full-duplex, master drives the clock, device selected by pulling its CS pin low
+uint8_t spiTransfer(uint8_t out) {
+    setChipSelectLow();
+    while (!spiBufferEmpty()) {}
+    SPI-&gt;DATA_REGISTER = out;
+    while (!spiTransferComplete()) {}
+    uint8_t in = SPI-&gt;DATA_REGISTER;        // received byte arrives as the sent byte clocks out
+    setChipSelectHigh();
+    return in;
+}
+
+// I2C -- every device on the shared bus has a unique 7-bit address
+void i2cWrite(uint8_t deviceAddress, uint8_t registerAddr, uint8_t value) {
+    i2cStart();
+    i2cSendByte((deviceAddress &lt;&lt; 1) | 0);  // address + write bit
+    i2cSendByte(registerAddr);
+    i2cSendByte(value);
+    i2cStop();
+}</code></pre>
+  </div>
+  <p>
+    The engineering trade-off: UART is simplest but only connects two devices; I2C shares just two
+    wires among many devices at the cost of speed and more complex addressing logic; SPI is the
+    fastest of the three but needs a dedicated chip-select wire per device, so wiring grows with
+    device count.
+  </p>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">7. Memory-Mapped I/O and the <code>volatile</code> Keyword</h3>
+  <p>
+    On most microcontrollers, hardware peripherals don't have their own special instruction set —
+    instead, each register (GPIO, timer, UART, ADC...) is simply assigned a fixed memory address,
+    and reading or writing that address reads or writes the actual hardware. This is
+    <strong>memory-mapped I/O</strong>: the pointer syntax you already know from Module 2 becomes
+    your interface to physical wires.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>volatile_example.cpp</span><span class="lang">C++</span></div>
+    <pre><code>#define STATUS_REGISTER (*(volatile uint32_t*)0x40001000)
+
+void waitForHardwareReady() {
+    while ((STATUS_REGISTER &amp; 0x1) == 0) {
+        // busy-wait until the hardware sets the ready bit
+    }
+}</code></pre>
+  </div>
+  <div class="callout danger">
+    <span class="callout-icon">🔴</span>
+    <div class="callout-body">
+      <strong>Why this loop is broken without <code>volatile</code></strong>
+      From the compiler's point of view, nothing inside this loop ever changes
+      <code>STATUS_REGISTER</code>, so an aggressive optimizer is entitled to read it once, decide
+      the condition never changes, and either optimize the loop into an infinite loop or delete it
+      entirely. <code>volatile</code> tells the compiler "this value can change for reasons outside
+      this program's control (hardware), so re-read it from memory every single time, and never
+      cache it in a register or optimize the access away." It says nothing about thread-safety or
+      atomicity — those are separate concerns handled by the tools from Module 8.
+    </div>
+  </div>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">8. Watchdog Timers</h3>
+  <p>
+    A watchdog timer is a hardware safety net: a countdown timer that resets the entire
+    microcontroller if it's ever allowed to reach zero. Firmware must periodically "pet" (reset)
+    the watchdog to prove it's still alive and executing correctly. If a bug ever hangs the main
+    loop — an infinite loop, a deadlock, corrupted memory — the firmware stops petting the
+    watchdog, it expires, and the chip automatically reboots rather than staying frozen forever.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>watchdog_concept.cpp</span><span class="lang">C++</span></div>
+    <pre><code>void petWatchdog() { WATCHDOG-&gt;RELOAD_REGISTER = WATCHDOG_RESET_KEY; }
+
+int main() {
+    initWatchdog(/*timeout_ms=*/500);   // if not pet within 500ms, chip resets
+    while (true) {
+        doSensorReading();
+        doControlLogic();
+        petWatchdog();                 // proves the loop completed a full, healthy cycle
+    }
+}</code></pre>
+  </div>
+  <p>
+    This is exactly why a lift controller shouldn't rely purely on software error handling — a
+    watchdog is the last line of defense that recovers the system even from bugs nobody anticipated.
+  </p>
+
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:2.5rem">9. Real-Time Constraints and RTOS Basics</h3>
+  <p>
+    A "real-time" system isn't necessarily about being <em>fast</em> — it's about being
+    <strong>predictable</strong>. A hard real-time system (like an elevator's emergency brake
+    logic) must guarantee a response within a fixed deadline every single time; missing that
+    deadline is treated as a system failure, not just a slowdown. A soft real-time system (like
+    video playback) can tolerate occasional missed deadlines with degraded — but not
+    catastrophic — quality.
+  </p>
+  <p>
+    On simple firmware, a single <code>while(true)</code> "super-loop" handles everything in
+    sequence. As a project grows to juggle many independent, time-sensitive activities — reading
+    sensors, driving a motor, servicing communication — an <strong>RTOS</strong> (Real-Time
+    Operating System, e.g. FreeRTOS) becomes valuable: it lets you write each activity as its own
+    independent <strong>task</strong>, and a scheduler decides which task runs when, based on
+    priority and readiness, all within microsecond-level, deterministic scheduling overhead.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>rtos_task_concept.cpp</span><span class="lang">C++</span></div>
+    <pre><code>// Conceptual shape of two FreeRTOS-style tasks running "concurrently" via preemptive scheduling
+void SensorTask(void* params) {
+    while (true) {
+        readSensors();
+        vTaskDelay(pdMS_TO_TICKS(10));   // yield the CPU for 10ms; scheduler runs other tasks
+    }
+}
+
+void MotorControlTask(void* params) {
+    while (true) {
+        updateMotorSpeed();
+        vTaskDelay(pdMS_TO_TICKS(1));    // higher-frequency task -- runs more often
+    }
+}
+
+int main() {
+    xTaskCreate(SensorTask,       "Sensor", 256, nullptr, /*priority=*/1, nullptr);
+    xTaskCreate(MotorControlTask, "Motor",  256, nullptr, /*priority=*/3, nullptr); // higher priority
+    vTaskStartScheduler();   // hands control over to the RTOS scheduler; never returns
+}</code></pre>
+  </div>
+  <p>
+    Here, <code>MotorControlTask</code> has a higher priority number, so whenever both tasks are
+    ready to run, the scheduler favors the motor task — appropriate, since a delayed motor
+    correction is far more dangerous than a slightly delayed sensor read.
+  </p>
+
+  <div class="callout arch" style="margin-top:2rem">
+    <span class="callout-icon">🧠</span>
+    <div class="callout-body">
+      <strong>Key Takeaways — Embedded Systems Basics</strong>
+      Microcontrollers integrate CPU, memory, and peripherals on one chip for dedicated control
+      tasks. GPIO, timers, ADC/DAC, and communication peripherals are all configured through
+      registers using the bit-masking idioms from Module 14. Interrupts let hardware events preempt
+      the CPU instead of wasting cycles on polling, but ISRs must stay short. Memory-mapped I/O
+      turns pointer dereferences into hardware control, and <code>volatile</code> stops the
+      compiler from optimizing away those hardware-driven changes. Watchdog timers recover a
+      hung system automatically. Real-time constraints are about deadline predictability, not raw
+      speed, and an RTOS provides deterministic, priority-based scheduling once a single super-loop
+      no longer scales.
+    </div>
+  </div>
+</section>
+
 
 <!-- ── FOOTER ──────────────────────────────────────────────── -->
 <section style="margin-top:3rem;padding:2rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);text-align:center">
@@ -7372,7 +8058,7 @@ Click count: 2</div>
     Lead Principal Architect Series · C++ Mastery Crash Course
   </div>
   <div style="font-size:.88rem;color:var(--muted)">
-    All 13 topics covered · C++11 through C++20 · Core Data Structures, Algorithms, Design Patterns &amp; Language Foundations
+    All 15 topics covered · C++11 through C++20 · Core Data Structures, Algorithms, Design Patterns, Bit Manipulation &amp; Embedded Systems
   </div>
   <div style="margin-top:1rem;font-family:var(--font-code);font-size:.75rem;color:var(--border)">
     Compiled and verified examples · Save and revisit anytime
