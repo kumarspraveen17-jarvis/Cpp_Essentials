@@ -474,14 +474,14 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
     </p>
 
     <div class="hero-badges">
-      <div class="chip"><span class="dot"></span>13 Core Topics</div>
+      <div class="chip"><span class="dot"></span>15 Core Topics</div>
       <div class="chip" style="color:var(--accent3)">◆ C++11 → C++20</div>
       <div class="chip" style="color:var(--accent2)">◆ Production Patterns</div>
       <div class="chip" style="color:var(--danger)">◆ Interview-Ready</div>
     </div>
 
     <div class="hero-stats" id="heroStats">
-      <div class="stat-card"><div class="stat-num" data-count="11">0</div><div class="stat-label">Topics</div></div>
+      <div class="stat-card"><div class="stat-num" data-count="15">0</div><div class="stat-label">Topics</div></div>
       <div class="stat-card"><div class="stat-num" data-count="120">0</div><div class="stat-label">Code Examples</div></div>
       <div class="stat-card"><div class="stat-num" data-count="60">0</div><div class="stat-label">Interview Qs</div></div>
       <div class="stat-card"><div class="stat-num" data-count="8">0</div><div class="stat-label">Hours, Self-Paced</div></div>
@@ -497,8 +497,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
         Start Learning
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </button>
-      <button class="btn btn-ghost" onclick="document.getElementById('t12') ? document.getElementById('t12').scrollIntoView({behavior:'smooth'}) : document.getElementById('t11').scrollIntoView({behavior:'smooth'})">
-        Jump to Interview Prep
+      <button class="btn btn-ghost" onclick="document.getElementById('t12').scrollIntoView({behavior:'smooth'})">
+        Jump to DSA &amp; Interview Prep
       </button>
     </div>
   </div>
@@ -564,7 +564,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
     <main class="main" id="main-content">
 
 <!-- ═══════════════════════════════════════════════════════════
-     TOPIC 1 — POINTERS & MEMORY MANAGEMENT
+     TOPIC 1 — CORE LANGUAGE FOUNDATIONS & IDIOMS
 ═══════════════════════════════════════════════════════════ -->
 <section class="topic" id="t1">
   <div class="topic-header">
@@ -1484,6 +1484,128 @@ Distance: 5 elements</div>
 │                    TEXT                     │  ← compiled code (read-only)
 └─────────────────────────────────────────────┘</code></pre>
   </div>
+
+  <!-- ═══════════════ MEMORY FRAGMENTATION ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem">Memory Fragmentation</h3>
+  <p>
+    Even when the heap holds enough <em>total</em> free bytes, a large allocation can fail — or
+    runtime performance can degrade silently — because the free memory is scattered into many
+    small, non-contiguous gaps. This is <strong>memory fragmentation</strong>, and it is one of
+    the most critical concepts for embedded and long-running systems programmers.
+  </p>
+
+  <h4>External vs Internal Fragmentation</h4>
+  <table>
+    <tr><th>Type</th><th>What causes it</th><th>Where space is wasted</th></tr>
+    <tr><td><strong>External fragmentation</strong></td><td>Many allocate/free cycles leave isolated free gaps between live blocks</td><td><em>Between</em> allocated blocks — total free space may be enough but no single contiguous chunk fits the request</td></tr>
+    <tr><td><strong>Internal fragmentation</strong></td><td>Allocator rounds every request up to a minimum block size (e.g. 8 or 16 bytes)</td><td><em>Inside</em> an allocated block — you asked for 5 bytes, got 16; 11 are wasted but "yours"</td></tr>
+  </table>
+
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>fragmentation.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;vector&gt;</span>
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="kw">constexpr</span> <span class="kw">int</span> N = <span class="nm">8</span>;
+    std::vector&lt;<span class="kw">int</span>*&gt; blocks;
+
+    <span class="cm">// Step 1 — allocate 8 independent small arrays</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nm">0</span>; i &lt; N; ++i)
+        blocks.push_back(<span class="kw">new</span> <span class="ty">int</span>[<span class="nm">16</span>]);
+    std::cout &lt;&lt; <span class="st">"All 8 blocks allocated.\n"</span>;
+
+    <span class="cm">// Step 2 — free only the EVEN-indexed blocks, leaving gaps between live blocks</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nm">0</span>; i &lt; N; i += <span class="nm">2</span>) {
+        <span class="kw">delete</span>[] blocks[i];
+        blocks[i] = <span class="kw">nullptr</span>;
+    }
+    std::cout &lt;&lt; <span class="st">"Freed even-indexed blocks — free space is now fragmented.\n"</span>;
+
+    <span class="cm">// The heap has 4×16 ints of free space, but each gap is isolated.
+    // A single new int[64] may FAIL even though total free bytes would cover it.</span>
+    std::cout &lt;&lt; <span class="st">"A large contiguous allocation may now fail despite enough total free bytes.\n"</span>;
+
+    <span class="cm">// Internal fragmentation: ask for 1 byte; allocator silently gives 8–16</span>
+    <span class="kw">char</span>* tiny = <span class="kw">new</span> <span class="ty">char</span>(<span class="nm">1</span>);
+    std::cout &lt;&lt; <span class="st">"char(1) at: "</span> &lt;&lt; <span class="kw">static_cast</span>&lt;<span class="kw">void</span>*&gt;(tiny)
+              &lt;&lt; <span class="st">" (block header + alignment padding add hidden overhead)\n"</span>;
+    <span class="kw">delete</span> tiny;
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nm">1</span>; i &lt; N; i += <span class="nm">2</span>) <span class="kw">delete</span>[] blocks[i];
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">All 8 blocks allocated.
+Freed even-indexed blocks — free space is now fragmented.
+A large contiguous allocation may now fail despite enough total free bytes.
+char(1) at: 0x... (block header + alignment padding add hidden overhead)</div>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>Heap State Diagram</span><span class="lang">ASCII</span></div>
+    <pre><code>After allocating 8 blocks:
+[LIVE][LIVE][LIVE][LIVE][LIVE][LIVE][LIVE][LIVE]
+
+After freeing even-indexed blocks:
+[FREE][LIVE][FREE][LIVE][FREE][LIVE][FREE][LIVE]
+  ^-- isolated gaps; total free = 4x, but max contiguous = 1x
+
+Internal fragmentation inside each block:
+┌─────────────────────────┐
+│ allocator header (8B)   │  ← hidden per-allocation overhead
+│ your data (requested)   │
+│ padding to alignment    │  ← wasted inside your "owned" block
+└─────────────────────────┘</code></pre>
+  </div>
+
+  <div class="callout warn">
+    <span class="callout-icon">⚠️</span>
+    <div class="callout-body">
+      <strong>Why This Is Critical in Embedded Systems</strong>
+      A microcontroller with 64 KB RAM that repeatedly allocates and frees variable-sized objects
+      can fragment its heap so badly that a 200-byte allocation fails after hours of runtime —
+      even with 2 KB theoretically free. Long-lived embedded applications commonly avoid
+      <code>new</code>/<code>delete</code> after startup entirely, using pre-allocated memory
+      pools instead. This is the <strong>static allocation strategy</strong>.
+    </div>
+  </div>
+
+  <h4>Mitigation Strategies</h4>
+  <table>
+    <tr><th>Strategy</th><th>Mechanism</th><th>Trade-off</th></tr>
+    <tr><td>Memory pools</td><td>Pre-allocate a large block; hand out same-sized sub-blocks from a free list</td><td>Zero external fragmentation for same-size objects; inflexible for mixed sizes</td></tr>
+    <tr><td>Arena / bump allocator</td><td>Maintain a pointer into a large buffer; each alloc just advances it</td><td>O(1) allocation, zero fragmentation; no individual <code>delete</code> — only bulk reset</td></tr>
+    <tr><td>Slab allocator</td><td>One pool per object size class (Linux kernel technique)</td><td>Near-zero fragmentation; complex to implement correctly</td></tr>
+    <tr><td>Avoid dynamic allocation</td><td>Use <code>std::array</code>, fixed-size buffers, stack objects for bounded sizes</td><td>Requires knowing sizes at compile time</td></tr>
+    <tr><td><code>std::pmr</code> (C++17)</td><td><code>std::pmr::monotonic_buffer_resource</code> provides a standard-library arena; plug into any PMR-aware container</td><td>Standard, portable, zero custom allocator code</td></tr>
+  </table>
+
+  <div class="callout arch">
+    <span class="callout-icon">🏛️</span>
+    <div class="callout-body">
+      <strong>Architect's Rule — Pool-Allocate Hot Objects</strong>
+      If your system allocates and frees the same type thousands of times per second
+      (network packets, sensor readings, event structs), use a fixed-size pool for that type.
+      A pool eliminates external fragmentation entirely for those objects and makes allocation
+      O(1) — one pointer bump or free-list pop. <code>std::pmr::monotonic_buffer_resource</code>
+      with a pre-allocated byte array achieves this in standard C++17 with no custom code.
+    </div>
+  </div>
+
+  <div class="exercise-box interview">
+    <div class="exercise-title">🎯 Interview Questions</div>
+    <ul>
+      <li>What is the difference between internal and external fragmentation?</li>
+      <li>Why can a long-running process fail to allocate memory even though total free heap is larger than the requested size?</li>
+      <li>What is a memory pool, and which type of fragmentation does it eliminate?</li>
+      <li>Why do RTOS-based embedded systems often prohibit dynamic allocation after startup?</li>
+      <li>How does <code>std::pmr::monotonic_buffer_resource</code> help with fragmentation in C++17?</li>
+    </ul>
+  </div>
+
 </section>
 
 
@@ -2887,6 +3009,325 @@ Door open? false</div>
     <tr><td>Interface</td><td>A stricter abstract class: <em>every</em> method is pure virtual, no data members — a pure contract</td></tr>
     <tr><td>Pure virtual function</td><td>Declared with <code>= 0</code> — derived classes <strong>must</strong> override it, or they become abstract too</td></tr>
   </table>
+
+  <!-- ═══════════════ OVERRIDING vs OVERLOADING ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem">Function Overriding vs Function Overloading — The Complete Picture</h3>
+  <p>
+    These two terms are frequently confused in interviews. They are completely different mechanisms,
+    resolved at different times, for different purposes.
+  </p>
+  <table>
+    <tr><th>Aspect</th><th>Overloading</th><th>Overriding</th></tr>
+    <tr><td>Resolved at</td><td>Compile time (static dispatch)</td><td>Runtime via vtable (dynamic dispatch)</td></tr>
+    <tr><td>Requirement</td><td>Same name, different parameter types or count in the same scope</td><td>Same name, same signature as a <code>virtual</code> base method; different class</td></tr>
+    <tr><td>Keyword used</td><td>None — compiler detects automatically</td><td><code>override</code> (mandatory in modern C++ — catches signature mismatches)</td></tr>
+    <tr><td>Return type</td><td>Can differ freely</td><td>Must match exactly (or be a covariant pointer/reference type)</td></tr>
+    <tr><td>Inheritance needed?</td><td>No</td><td>Yes — derived class overrides a base class virtual function</td></tr>
+    <tr><td>Polymorphic dispatch?</td><td>No — call resolution is baked in at compile time</td><td>Yes — which function runs depends on the runtime type of the object</td></tr>
+  </table>
+
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>overload_vs_override.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+
+<span class="cm">// ── OVERLOADING — same scope, different signatures ──────────────────────</span>
+<span class="kw">void</span> <span class="fn">log</span>(<span class="kw">int</span> code)              { std::cout &lt;&lt; <span class="st">"[LOG] code="</span>    &lt;&lt; code    &lt;&lt; <span class="st">"\n"</span>; }
+<span class="kw">void</span> <span class="fn">log</span>(<span class="kw">const</span> std::string&amp; msg) { std::cout &lt;&lt; <span class="st">"[LOG] msg="</span>     &lt;&lt; msg     &lt;&lt; <span class="st">"\n"</span>; }
+<span class="kw">void</span> <span class="fn">log</span>(<span class="kw">double</span> val, <span class="kw">int</span> prec)  { std::cout &lt;&lt; <span class="st">"[LOG] val="</span>     &lt;&lt; val     &lt;&lt; <span class="st">"\n"</span>; }
+<span class="cm">// Resolved at compile time — the compiler looks at argument types
+// and selects the matching overload. Zero runtime cost.</span>
+
+<span class="cm">// ── OVERRIDING — derived class replaces a base virtual function ──────────</span>
+<span class="kw">struct</span> <span class="cl">Sensor</span> {
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="fn">read</span>() <span class="kw">const</span> { std::cout &lt;&lt; <span class="st">"Sensor::read (default)\n"</span>; }
+    <span class="kw">virtual</span> ~<span class="cl">Sensor</span>() = <span class="kw">default</span>;
+};
+
+<span class="kw">struct</span> <span class="cl">TemperatureSensor</span> : <span class="cl">Sensor</span> {
+    <span class="kw">void</span> <span class="fn">read</span>() <span class="kw">const</span> <span class="kw">override</span> { std::cout &lt;&lt; <span class="st">"TemperatureSensor::read (25°C)\n"</span>; }
+    <span class="cm">// 'override' tells the compiler: I intend to override a base virtual function.
+    // If the signature doesn't match (e.g. missing const), COMPILE ERROR — not a silent new function.</span>
+};
+
+<span class="kw">struct</span> <span class="cl">PressureSensor</span> : <span class="cl">Sensor</span> {
+    <span class="kw">void</span> <span class="fn">read</span>() <span class="kw">const</span> <span class="kw">override</span> { std::cout &lt;&lt; <span class="st">"PressureSensor::read (1013 hPa)\n"</span>; }
+};
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="cm">// Overloading — which log() is called is decided here by the compiler</span>
+    <span class="fn">log</span>(<span class="nm">42</span>);
+    <span class="fn">log</span>(std::string(<span class="st">"Motor started"</span>));
+    <span class="fn">log</span>(<span class="nm">98.6</span>, <span class="nm">1</span>);
+
+    <span class="cm">// Overriding — which read() is called is decided at RUNTIME by the vtable</span>
+    <span class="cl">Sensor</span>* s1 = <span class="kw">new</span> <span class="cl">TemperatureSensor</span>();
+    <span class="cl">Sensor</span>* s2 = <span class="kw">new</span> <span class="cl">PressureSensor</span>();
+    s1-&gt;<span class="fn">read</span>();   <span class="cm">// calls TemperatureSensor::read — runtime dispatch</span>
+    s2-&gt;<span class="fn">read</span>();   <span class="cm">// calls PressureSensor::read   — runtime dispatch</span>
+    <span class="kw">delete</span> s1; <span class="kw">delete</span> s2;
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">[LOG] code=42
+[LOG] msg=Motor started
+[LOG] val=98.6
+TemperatureSensor::read (25°C)
+PressureSensor::read (1013 hPa)</div>
+  </div>
+
+  <div class="callout danger">
+    <span class="callout-icon">🔴</span>
+    <div class="callout-body">
+      <strong>The Silent Bug — Hiding Instead of Overriding</strong>
+      If you define a function in a derived class with the <em>same name</em> as a base function
+      but a different signature — and forget <code>override</code> — the compiler silently creates
+      a <em>new</em>, unrelated function that <strong>hides</strong> the base one. Calling through
+      a base pointer still dispatches to the base version. <code>override</code> turns this
+      silent bug into a compile error. Always use it.
+    </div>
+  </div>
+
+  <!-- ═══════════════ OPERATOR OVERLOADING ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem">Operator Overloading — In Depth</h3>
+  <p>
+    Operator overloading lets user-defined types support the same natural syntax as built-in
+    types. When you write <code>v1 + v2</code> on a custom vector class, the compiler translates
+    it to <code>v1.operator+(v2)</code> — an ordinary function call you wrote. This is pure
+    compile-time dispatch; it adds zero runtime overhead.
+  </p>
+
+  <h4>Member vs Free-Function Operators</h4>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>operator_overload.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;string&gt;</span>
+
+<span class="kw">class</span> <span class="cl">Vector2</span> {
+<span class="kw">public</span>:
+    <span class="kw">double</span> x, y;
+    <span class="cl">Vector2</span>(<span class="kw">double</span> x_, <span class="kw">double</span> y_) : x(x_), y(y_) {}
+
+    <span class="cm">// ── MEMBER operator: left operand is implicitly *this ──────────────
+    // Compound-assignment, subscript, call — always members.</span>
+    <span class="cl">Vector2</span>&amp; <span class="kw">operator</span>+=(<span class="kw">const</span> <span class="cl">Vector2</span>&amp; o) {
+        x += o.x; y += o.y;
+        <span class="kw">return</span> *<span class="kw">this</span>;   <span class="cm">// return *this to allow chaining: a += b += c</span>
+    }
+
+    <span class="cm">// Unary negation — member (no second operand)</span>
+    <span class="cl">Vector2</span> <span class="kw">operator</span>-() <span class="kw">const</span> { <span class="kw">return</span> {-x, -y}; }
+
+    <span class="cm">// Comparison (C++20: can auto-generate all six from &lt;=&gt; spaceship)</span>
+    <span class="kw">bool</span> <span class="kw">operator</span>==(<span class="kw">const</span> <span class="cl">Vector2</span>&amp; o) <span class="kw">const</span> { <span class="kw">return</span> x == o.x &amp;&amp; y == o.y; }
+
+    <span class="cm">// ── FREE-FUNCTION operator (friend for private access) ─────────────
+    // Binary arithmetic: both operands are parameters — symmetric, works when
+    // left operand is NOT the class type (e.g. 3.0 + vec).</span>
+    <span class="kw">friend</span> <span class="cl">Vector2</span> <span class="kw">operator</span>+(<span class="cl">Vector2</span> lhs, <span class="kw">const</span> <span class="cl">Vector2</span>&amp; rhs) {
+        lhs += rhs;   <span class="cm">// reuse += defined above</span>
+        <span class="kw">return</span> lhs;
+    }
+
+    <span class="cm">// Stream insertion — MUST be a free function: left operand is ostream, not Vector2</span>
+    <span class="kw">friend</span> std::ostream&amp; <span class="kw">operator</span>&lt;&lt;(std::ostream&amp; os, <span class="kw">const</span> <span class="cl">Vector2</span>&amp; v) {
+        <span class="kw">return</span> os &lt;&lt; <span class="st">"("</span> &lt;&lt; v.x &lt;&lt; <span class="st">", "</span> &lt;&lt; v.y &lt;&lt; <span class="st">")"</span>;
+    }
+};
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="cl">Vector2</span> a{<span class="nm">1.0</span>, <span class="nm">2.0</span>}, b{<span class="nm">3.0</span>, <span class="nm">4.0</span>};
+
+    std::cout &lt;&lt; <span class="st">"a + b = "</span> &lt;&lt; (a + b) &lt;&lt; <span class="st">"\n"</span>;          <span class="cm">// (4, 6)</span>
+    std::cout &lt;&lt; <span class="st">"-a    = "</span> &lt;&lt; (-a)    &lt;&lt; <span class="st">"\n"</span>;          <span class="cm">// (-1, -2)</span>
+    a += b;
+    std::cout &lt;&lt; <span class="st">"a after +=: "</span> &lt;&lt; a &lt;&lt; <span class="st">"\n"</span>;           <span class="cm">// (4, 6)</span>
+    std::cout &lt;&lt; std::boolalpha &lt;&lt; (a == b) &lt;&lt; <span class="st">"\n"</span>;     <span class="cm">// false</span>
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">a + b = (4, 6)
+-a    = (-1, -2)
+a after +=: (4, 6)
+false</div>
+  </div>
+
+  <h4>Operators That Cannot Be Overloaded — and Why</h4>
+  <table>
+    <tr><th>Operator</th><th>Why it cannot be overloaded</th></tr>
+    <tr><td><code>::</code> (scope resolution)</td><td>Resolved entirely at compile time by the parser before any overload lookup begins — it names a scope, not a value operation</td></tr>
+    <tr><td><code>.</code> (member access)</td><td>If overloadable, <code>obj.member</code> and <code>obj.operator.()</code> would be ambiguous; the language forbids it to keep member lookup unambiguous. (<code>-&gt;</code> can be overloaded for smart pointers)</td></tr>
+    <tr><td><code>.*</code> (pointer-to-member dereference)</td><td>Same reason as <code>.</code> — its semantics are too deeply tied to the type system to allow user redefinition</td></tr>
+    <tr><td><code>?:</code> (ternary / conditional)</td><td>Requires exactly two branches evaluated by different rules; overloading would require evaluating both branches as function arguments (losing lazy evaluation)</td></tr>
+    <tr><td><code>sizeof</code></td><td>Evaluated at compile time by the compiler on the type, not on a value — not a runtime operator at all</td></tr>
+    <tr><td><code>typeid</code></td><td>Intrinsic to the RTTI system; must be built into the compiler</td></tr>
+    <tr><td><code>alignof</code> / <code>noexcept</code></td><td>Compile-time queries on types, not values — same reason as <code>sizeof</code></td></tr>
+    <tr><td><code>static_assert</code>, <code>#</code></td><td>Preprocessor / compile-time directives, not runtime operators</td></tr>
+  </table>
+
+  <div class="callout warn">
+    <span class="callout-icon">⚠️</span>
+    <div class="callout-body">
+      <strong>Operators You Should Not Overload (Legal but Dangerous)</strong>
+      <code>&amp;&amp;</code> and <code>||</code> — overloading them destroys short-circuit evaluation.
+      The built-in <code>a &amp;&amp; b</code> does not evaluate <code>b</code> if <code>a</code> is false;
+      an overloaded <code>operator&amp;&amp;</code> evaluates both arguments before calling the function.
+      <code>,</code> (comma) — overloading removes the guaranteed left-to-right evaluation order.
+      <code>&amp;</code> (unary address-of) — overloading breaks compatibility with standard library code
+      that assumes <code>&amp;obj</code> returns a real pointer.
+    </div>
+  </div>
+
+  <h4>The Rule: Member vs Free Function</h4>
+  <table>
+    <tr><th>Category</th><th>Implement as</th><th>Reason</th></tr>
+    <tr><td>Compound assignment (<code>+=</code>, <code>-=</code>, etc.)</td><td>Member</td><td>Modifies <code>*this</code>; must have access to internals</td></tr>
+    <tr><td>Subscript <code>[]</code>, call <code>()</code>, arrow <code>-&gt;</code></td><td>Member</td><td>Standard requires it</td></tr>
+    <tr><td>Unary <code>+</code>, <code>-</code>, <code>!</code>, prefix <code>++</code></td><td>Member preferred</td><td>Only one operand — naturally <code>this</code></td></tr>
+    <tr><td>Binary arithmetic (<code>+</code>, <code>-</code>, <code>*</code>)</td><td>Free function (using <code>+=</code>)</td><td>Symmetric — allows <code>scalar + MyType</code> as well as <code>MyType + scalar</code></td></tr>
+    <tr><td>Stream I/O (<code>&lt;&lt;</code>, <code>&gt;&gt;</code>)</td><td>Free function (friend)</td><td>Left operand is <code>std::ostream</code>/<code>std::istream</code>, not your type</td></tr>
+    <tr><td>Equality, relational</td><td>Free function (C++20: <code>operator&lt;=&gt;</code>)</td><td>Symmetric; C++20 spaceship auto-generates all six</td></tr>
+  </table>
+
+  <!-- ═══════════════ LVALUE / RVALUE / REFERENCE COLLAPSING ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem">lvalue, rvalue &amp; Reference Collapsing</h3>
+  <p>
+    Every C++ expression has a <strong>value category</strong> that determines whether it can
+    appear on the left of <code>=</code>, whether it can bind to an rvalue reference, and whether
+    the compiler will apply move semantics. Misunderstanding this is the root cause of most
+    move-semantics bugs.
+  </p>
+
+  <h4>Value Categories at a Glance</h4>
+  <table>
+    <tr><th>Category</th><th>Definition</th><th>Examples</th><th>Can take address?</th></tr>
+    <tr><td><strong>lvalue</strong></td><td>Has a persistent identity (a name, a memory location that outlives the expression)</td><td>Named variables, <code>*ptr</code>, <code>arr[i]</code>, function call returning <code>T&amp;</code></td><td>Yes</td></tr>
+    <tr><td><strong>prvalue</strong> (pure rvalue)</td><td>A temporary with no persistent identity — its value is used immediately then discarded</td><td>Literals (<code>42</code>, <code>3.14</code>), <code>a + b</code>, function call returning <code>T</code> (by value)</td><td>No</td></tr>
+    <tr><td><strong>xvalue</strong> ("expiring" value)</td><td>An object whose resources can be stolen — it has identity but is about to expire</td><td><code>std::move(x)</code>, function returning <code>T&amp;&amp;</code></td><td>Yes (but shouldn't be used after)</td></tr>
+  </table>
+  <p style="font-size:.85rem;color:var(--muted)">
+    lvalue + xvalue = <strong>glvalue</strong> (generalised lvalue — has identity).
+    prvalue + xvalue = <strong>rvalue</strong> (can bind to <code>T&amp;&amp;</code>).
+  </p>
+
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>lvalue_rvalue_overloading.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;string&gt;</span>
+
+<span class="cm">// Overload on value category — the compiler picks based on what the caller passes</span>
+<span class="kw">void</span> <span class="fn">process</span>(<span class="kw">const</span> std::string&amp; s) {     <span class="cm">// lvalue overload: binds to named objects</span>
+    std::cout &lt;&lt; <span class="st">"lvalue: "</span> &lt;&lt; s &lt;&lt; <span class="st">"\n"</span>;
+}
+<span class="kw">void</span> <span class="fn">process</span>(std::string&amp;&amp; s) {           <span class="cm">// rvalue overload: binds to temporaries / std::move()</span>
+    std::cout &lt;&lt; <span class="st">"rvalue (can steal): "</span> &lt;&lt; s &lt;&lt; <span class="st">"\n"</span>;
+}
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    std::string name = <span class="st">"Praveen"</span>;
+
+    <span class="fn">process</span>(name);                     <span class="cm">// lvalue — 'name' has a name, lives beyond this call</span>
+    <span class="fn">process</span>(std::string(<span class="st">"temporary"</span>)); <span class="cm">// prvalue — temporary has no name</span>
+    <span class="fn">process</span>(std::move(name));          <span class="cm">// xvalue — 'name' cast to rvalue; may be left in valid-but-empty state</span>
+
+    std::cout &lt;&lt; <span class="st">"name after move: '"</span> &lt;&lt; name &lt;&lt; <span class="st">"'\n"</span>;  <span class="cm">// "" — moved-from state</span>
+
+    <span class="cm">// lvalue reference: only binds to lvalues</span>
+    <span class="kw">int</span> x = <span class="nm">10</span>;
+    <span class="kw">int</span>&amp; lref = x;          <span class="cm">// OK — x is an lvalue</span>
+    <span class="cm">// int&amp; bad = 42;        // ERROR — 42 is a prvalue; lvalue ref can't bind to it</span>
+
+    <span class="cm">// rvalue reference: only binds to rvalues (temporaries / moved-from)</span>
+    <span class="kw">int</span>&amp;&amp; rref = <span class="nm">42</span>;        <span class="cm">// OK — extends the lifetime of the temporary 42</span>
+    <span class="kw">int</span>&amp;&amp; rref2 = x + <span class="nm">1</span>;   <span class="cm">// OK — x+1 is a prvalue</span>
+    <span class="cm">// int&amp;&amp; bad2 = x;       // ERROR — x is an lvalue, not an rvalue</span>
+    std::cout &lt;&lt; <span class="st">"rref="</span> &lt;&lt; rref &lt;&lt; <span class="st">" rref2="</span> &lt;&lt; rref2 &lt;&lt; <span class="st">"\n"</span>;
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">lvalue: Praveen
+rvalue (can steal): temporary
+rvalue (can steal): Praveen
+name after move: ''
+rref=42 rref2=11</div>
+  </div>
+
+  <h4>Reference Collapsing — The Rule That Makes Perfect Forwarding Work</h4>
+  <p>
+    When template deduction or <code>typedef</code> creates "a reference to a reference," the
+    language applies reference collapsing to produce a single valid reference. The rule is simple:
+    <strong>if either reference is an lvalue reference, the result is an lvalue reference.</strong>
+  </p>
+  <table>
+    <tr><th>Collapsed From</th><th>Result</th><th>Intuition</th></tr>
+    <tr><td><code>T&amp; &amp;</code></td><td><code>T&amp;</code></td><td>lvalue wins</td></tr>
+    <tr><td><code>T&amp; &amp;&amp;</code></td><td><code>T&amp;</code></td><td>lvalue wins</td></tr>
+    <tr><td><code>T&amp;&amp; &amp;</code></td><td><code>T&amp;</code></td><td>lvalue wins</td></tr>
+    <tr><td><code>T&amp;&amp; &amp;&amp;</code></td><td><code>T&amp;&amp;</code></td><td>only rvalue if both are rvalue</td></tr>
+  </table>
+
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>reference_collapsing.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;utility&gt;</span>
+
+<span class="cm">// Universal reference (T&amp;&amp; in a deduced context) captures EITHER lvalue OR rvalue.
+// When T is deduced as int&amp;, T&amp;&amp; collapses to int&amp; &amp;&amp; = int&amp; (lvalue).
+// When T is deduced as int,  T&amp;&amp; stays as int&amp;&amp; (rvalue).</span>
+<span class="kw">template</span>&lt;<span class="kw">typename</span> T&gt;
+<span class="kw">void</span> <span class="fn">wrapper</span>(T&amp;&amp; arg) {              <span class="cm">// T&amp;&amp; is a "forwarding reference" here</span>
+    <span class="fn">process</span>(std::forward&lt;T&gt;(arg));   <span class="cm">// perfect-forwards: preserves value category</span>
+}
+
+<span class="kw">void</span> <span class="fn">process</span>(<span class="kw">const</span> std::string&amp; s) { std::cout &lt;&lt; <span class="st">"lvalue: "</span> &lt;&lt; s &lt;&lt; <span class="st">"\n"</span>; }
+<span class="kw">void</span> <span class="fn">process</span>(std::string&amp;&amp; s)       { std::cout &lt;&lt; <span class="st">"rvalue: "</span> &lt;&lt; s &lt;&lt; <span class="st">"\n"</span>; }
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    std::string s = <span class="st">"hello"</span>;
+    <span class="fn">wrapper</span>(s);               <span class="cm">// T deduced as string&amp; → T&amp;&amp; = string& → lvalue overload</span>
+    <span class="fn">wrapper</span>(std::move(s));    <span class="cm">// T deduced as string  → T&amp;&amp; = string&amp;&amp; → rvalue overload</span>
+    <span class="fn">wrapper</span>(std::string(<span class="st">"x"</span>)); <span class="cm">// T deduced as string  → rvalue overload</span>
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">lvalue: hello
+rvalue: hello
+rvalue: x</div>
+  </div>
+
+  <div class="callout arch">
+    <span class="callout-icon">🏛️</span>
+    <div class="callout-body">
+      <strong>std::move vs std::forward — The One-Line Rule</strong>
+      <code>std::move(x)</code> is an unconditional cast to rvalue — use it when transferring
+      ownership. <code>std::forward&lt;T&gt;(x)</code> conditionally casts to rvalue only if the
+      original argument was an rvalue — use it inside templates to <em>preserve</em> the caller's
+      value category (perfect forwarding). Using <code>std::move</code> inside a template wrapper
+      would turn lvalue arguments into rvalues, silently moving from objects the caller still
+      needs.
+    </div>
+  </div>
+
+  <div class="exercise-box interview">
+    <div class="exercise-title">🎯 Interview Questions</div>
+    <ul>
+      <li>What is the difference between function overloading and function overriding?</li>
+      <li>Why does the <code>override</code> keyword exist if C++ worked without it for decades?</li>
+      <li>Which operators cannot be overloaded, and give the reason for at least two of them?</li>
+      <li>Why must <code>operator&lt;&lt;</code> for stream output be a free function, not a member?</li>
+      <li>What is an lvalue? What is a prvalue? What is an xvalue?</li>
+      <li>What is reference collapsing, and what does it have to do with <code>std::forward</code>?</li>
+      <li>Why is <code>T&amp;&amp;</code> in a template a "universal reference" but <code>Vector2&amp;&amp;</code> in a method is always an rvalue reference?</li>
+    </ul>
+  </div>
+
 </section>
 
 
@@ -3274,6 +3715,203 @@ unknown</div>
       self-documenting. Prefer Concepts in C++20 codebases.
     </div>
   </div>
+
+  <!-- ═══════════════ VARIADIC TEMPLATES ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem">Variadic Templates &amp; Parameter Packs</h3>
+  <p>
+    A <strong>variadic template</strong> accepts any number of type parameters via a
+    <em>parameter pack</em> (<code>typename... Args</code>). Combined with
+    <strong>fold expressions</strong> (C++17), they replace error-prone recursive metaprogramming
+    with clean, single-expression code. This is how <code>std::make_tuple</code>,
+    <code>std::printf</code>-replacement formatting, and <code>std::variant</code> are built.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>variadic_templates.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+
+<span class="cm">// Fold expression (C++17): operate on all pack elements in one expression</span>
+<span class="kw">template</span>&lt;<span class="kw">typename</span>... <span class="ty">Args</span>&gt;
+<span class="kw">auto</span> <span class="fn">sum</span>(<span class="ty">Args</span>... args) {
+    <span class="kw">return</span> (... + args);          <span class="cm">// unary left fold: ((args[0]+args[1])+args[2])+...</span>
+}
+
+<span class="kw">template</span>&lt;<span class="kw">typename</span>... <span class="ty">Args</span>&gt;
+<span class="kw">void</span> <span class="fn">printAll</span>(<span class="ty">Args</span>&amp;&amp;... args) {
+    ((std::cout &lt;&lt; args &lt;&lt; <span class="st">" "</span>), ...);  <span class="cm">// comma fold: left-to-right evaluation</span>
+    std::cout &lt;&lt; <span class="st">"\n"</span>;
+}
+
+<span class="cm">// Recursive variadic template (pre-C++17 style — still important to understand)</span>
+<span class="kw">template</span>&lt;<span class="kw">typename</span> T&gt;
+<span class="kw">void</span> <span class="fn">printRec</span>(<span class="kw">const</span> T&amp; first) { std::cout &lt;&lt; first &lt;&lt; <span class="st">"\n"</span>; }
+<span class="kw">template</span>&lt;<span class="kw">typename</span> T, <span class="kw">typename</span>... <span class="ty">Rest</span>&gt;
+<span class="kw">void</span> <span class="fn">printRec</span>(<span class="kw">const</span> T&amp; first, <span class="ty">Rest</span>&amp;&amp;... rest) {
+    std::cout &lt;&lt; first &lt;&lt; <span class="st">" | "</span>;
+    <span class="fn">printRec</span>(std::forward&lt;<span class="ty">Rest</span>&gt;(rest)...);  <span class="cm">// peel one element, recurse on the rest</span>
+}
+
+<span class="cm">// sizeof... — number of elements in a pack (compile-time constant)</span>
+<span class="kw">template</span>&lt;<span class="kw">typename</span>... <span class="ty">Ts</span>&gt;
+<span class="kw">constexpr</span> <span class="kw">auto</span> <span class="fn">packSize</span>() { <span class="kw">return</span> <span class="kw">sizeof</span>...(<span class="ty">Ts</span>); }
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    std::cout &lt;&lt; <span class="fn">sum</span>(<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>, <span class="nm">4</span>, <span class="nm">5</span>) &lt;&lt; <span class="st">"\n"</span>;      <span class="cm">// 15</span>
+    <span class="fn">printAll</span>(<span class="nm">42</span>, <span class="st">"hello"</span>, <span class="nm">3.14</span>, <span class="kw">true</span>);
+    <span class="fn">printRec</span>(<span class="nm">10</span>, <span class="nm">20</span>, <span class="nm">30</span>);
+    std::cout &lt;&lt; <span class="st">"Pack size &lt;int,double,char&gt;: "</span>
+              &lt;&lt; <span class="fn">packSize</span>&lt;<span class="kw">int</span>, <span class="kw">double</span>, <span class="kw">char</span>&gt;() &lt;&lt; <span class="st">"\n"</span>;
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">15
+42 hello 3.14 1
+10 | 20 | 30
+Pack size &lt;int,double,char&gt;: 3</div>
+  </div>
+  <table>
+    <tr><th>Fold Syntax</th><th>Name</th><th>Expansion</th></tr>
+    <tr><td><code>(... op pack)</code></td><td>Unary left fold</td><td><code>((p0 op p1) op p2) ...</code></td></tr>
+    <tr><td><code>(pack op ...)</code></td><td>Unary right fold</td><td><code>p0 op (p1 op (... op pN))</code></td></tr>
+    <tr><td><code>(init op ... op pack)</code></td><td>Binary left fold</td><td><code>((init op p0) op p1) ...</code></td></tr>
+    <tr><td><code>(pack op ... op init)</code></td><td>Binary right fold</td><td><code>p0 op (... op (pN op init))</code></td></tr>
+  </table>
+
+  <!-- ═══════════════ IF CONSTEXPR ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem"><code>if constexpr</code> — Compile-Time Branching</h3>
+  <p>
+    <code>if constexpr</code> (C++17) lets a template have branches that are discarded at
+    compile time. The discarded branch is <strong>never instantiated</strong> — it may legally
+    contain code that would not compile for the given type, because the compiler never tries.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>if_constexpr.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;type_traits&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;string&gt;</span>
+
+<span class="kw">template</span>&lt;<span class="kw">typename</span> T&gt;
+<span class="kw">void</span> <span class="fn">describe</span>(<span class="kw">const</span> T&amp; val) {
+    <span class="kw">if</span> <span class="kw">constexpr</span> (std::is_integral_v&lt;T&gt;) {
+        std::cout &lt;&lt; <span class="st">"Integer: "</span> &lt;&lt; val &lt;&lt; <span class="st">" (even? "</span>
+                  &lt;&lt; std::boolalpha &lt;&lt; (val % <span class="nm">2</span> == <span class="nm">0</span>) &lt;&lt; <span class="st">")\n"</span>;
+        <span class="cm">// val % 2 would be a compile error for string — but this branch is
+        // DISCARDED when T is not integral, so it never sees a string.</span>
+    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">constexpr</span> (std::is_floating_point_v&lt;T&gt;) {
+        std::cout &lt;&lt; <span class="st">"Float: "</span> &lt;&lt; val &lt;&lt; <span class="st">" (truncated: "</span>
+                  &lt;&lt; <span class="kw">static_cast</span>&lt;<span class="kw">long long</span>&gt;(val) &lt;&lt; <span class="st">")\n"</span>;
+    } <span class="kw">else</span> {
+        std::cout &lt;&lt; <span class="st">"Other: "</span> &lt;&lt; val &lt;&lt; <span class="st">"\n"</span>;
+    }
+}
+
+<span class="kw">template</span>&lt;<span class="kw">int</span> N&gt;
+<span class="kw">constexpr</span> <span class="kw">int</span> <span class="fn">factorial</span>() {
+    <span class="kw">if</span> <span class="kw">constexpr</span> (N &lt;= <span class="nm">1</span>) <span class="kw">return</span> <span class="nm">1</span>;
+    <span class="kw">else</span>                   <span class="kw">return</span> N * <span class="fn">factorial</span>&lt;N - <span class="nm">1</span>&gt;();
+}
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="fn">describe</span>(<span class="nm">42</span>);
+    <span class="fn">describe</span>(<span class="nm">3.14</span>);
+    <span class="fn">describe</span>(std::string(<span class="st">"hello"</span>));
+    <span class="kw">constexpr</span> <span class="kw">int</span> f5 = <span class="fn">factorial</span>&lt;<span class="nm">5</span>&gt;();   <span class="cm">// zero runtime cost</span>
+    std::cout &lt;&lt; <span class="st">"5! = "</span> &lt;&lt; f5 &lt;&lt; <span class="st">"\n"</span>;
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">Integer: 42 (even? true)
+Float: 3.14 (truncated: 3)
+Other: hello
+5! = 120</div>
+  </div>
+
+  <!-- ═══════════════ TEMPLATE METAPROGRAMMING ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem">Template Metaprogramming (TMP) — Basics</h3>
+  <p>
+    TMP uses the template system as a <em>compile-time computation engine</em>. Types, integer
+    constants, and type transformations are resolved at compile time with zero runtime cost.
+    <code>&lt;type_traits&gt;</code> is TMP in action — the entire header is compile-time
+    template logic.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>template_metaprogramming.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;type_traits&gt;</span>
+
+<span class="cm">// Compile-time Fibonacci — computed entirely at compile time via template recursion</span>
+<span class="kw">template</span>&lt;<span class="kw">int</span> N&gt; <span class="kw">struct</span> <span class="cl">Fib</span> {
+    <span class="kw">static</span> <span class="kw">constexpr</span> <span class="kw">int</span> value = <span class="cl">Fib</span>&lt;N-<span class="nm">1</span>&gt;::value + <span class="cl">Fib</span>&lt;N-<span class="nm">2</span>&gt;::value;
+};
+<span class="kw">template</span>&lt;&gt; <span class="kw">struct</span> <span class="cl">Fib</span>&lt;<span class="nm">0</span>&gt; { <span class="kw">static</span> <span class="kw">constexpr</span> <span class="kw">int</span> value = <span class="nm">0</span>; };
+<span class="kw">template</span>&lt;&gt; <span class="kw">struct</span> <span class="cl">Fib</span>&lt;<span class="nm">1</span>&gt; { <span class="kw">static</span> <span class="kw">constexpr</span> <span class="kw">int</span> value = <span class="nm">1</span>; };
+
+<span class="cm">// Type traits — compile-time type inspection</span>
+<span class="kw">template</span>&lt;<span class="kw">typename</span> T&gt;
+<span class="kw">void</span> <span class="fn">typeReport</span>() {
+    std::cout &lt;&lt; <span class="st">"is_pointer:    "</span> &lt;&lt; std::boolalpha &lt;&lt; std::is_pointer_v&lt;T&gt;     &lt;&lt; <span class="st">"\n"</span>
+              &lt;&lt; <span class="st">"is_const:      "</span>                   &lt;&lt; std::is_const_v&lt;T&gt;      &lt;&lt; <span class="st">"\n"</span>
+              &lt;&lt; <span class="st">"is_arithmetic: "</span>                   &lt;&lt; std::is_arithmetic_v&lt;T&gt; &lt;&lt; <span class="st">"\n"</span>;
+    <span class="kw">using</span> <span class="ty">Mutable</span> = std::remove_const_t&lt;T&gt;;
+    std::cout &lt;&lt; <span class="st">"remove_const same as int? "</span> &lt;&lt; std::is_same_v&lt;<span class="ty">Mutable</span>, <span class="kw">int</span>&gt; &lt;&lt; <span class="st">"\n"</span>;
+}
+
+<span class="cm">// enable_if: remove a function from overload resolution for non-qualifying types
+// (C++20 Concepts are the modern ergonomic replacement for this pattern)</span>
+<span class="kw">template</span>&lt;<span class="kw">typename</span> T, <span class="kw">typename</span> = std::enable_if_t&lt;std::is_arithmetic_v&lt;T&gt;&gt;&gt;
+T <span class="fn">safeSquare</span>(T v) { <span class="kw">return</span> v * v; }
+<span class="cm">// safeSquare("hi") — COMPILE ERROR: enable_if removes this for non-arithmetic T</span>
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    std::cout &lt;&lt; <span class="st">"Fib&lt;10&gt; = "</span> &lt;&lt; <span class="cl">Fib</span>&lt;<span class="nm">10</span>&gt;::value &lt;&lt; <span class="st">"\n"</span>;   <span class="cm">// 55, zero runtime work</span>
+
+    std::cout &lt;&lt; <span class="st">"\n--- type report for const int ---\n"</span>;
+    <span class="fn">typeReport</span>&lt;<span class="kw">const</span> <span class="kw">int</span>&gt;();
+
+    std::cout &lt;&lt; <span class="st">"\nsafeSquare(7) = "</span> &lt;&lt; <span class="fn">safeSquare</span>(<span class="nm">7</span>) &lt;&lt; <span class="st">"\n"</span>;
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">Fib&lt;10&gt; = 55
+
+--- type report for const int ---
+is_pointer:    false
+is_const:      true
+is_arithmetic: true
+remove_const same as int? true
+
+safeSquare(7) = 49</div>
+  </div>
+
+  <div class="callout arch">
+    <span class="callout-icon">🏛️</span>
+    <div class="callout-body">
+      <strong>TMP in Production</strong>
+      You rarely write raw TMP structs in application code. Instead you use it indirectly:
+      <code>std::vector</code> uses it to choose between move and copy during reallocation;
+      <code>std::optional</code> uses it to be trivially-destructible when <code>T</code> is;
+      serialisation libraries auto-generate read/write code per field.
+      C++20 Concepts are the ergonomic face of TMP for constraints — prefer them at the
+      API boundary and keep raw <code>&lt;type_traits&gt;</code> inside implementation details.
+    </div>
+  </div>
+
+  <div class="exercise-box interview">
+    <div class="exercise-title">🎯 Interview Questions</div>
+    <ul>
+      <li>What is a parameter pack, and how do fold expressions simplify working with them versus recursive templates?</li>
+      <li>What does <code>if constexpr</code> do that a regular <code>if</code> does not?</li>
+      <li>What is template metaprogramming, and name two places the standard library uses it internally.</li>
+      <li>What does <code>std::enable_if</code> do, and what is the C++20 replacement?</li>
+      <li>What is the difference between a template specialisation and a template overload?</li>
+    </ul>
+  </div>
+
 </section>
 
 
@@ -4750,6 +5388,276 @@ All 6 threads completed, never more than 3 ran concurrently</div>
       and release it when done, and the semaphore enforces the hardware limit automatically
       without any thread needing to know which specific channel it ended up using.
     </div>
+  </div>
+
+  <!-- ═══════════════ RECURSIVE MUTEX ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem"><code>recursive_mutex</code> — When the Same Thread Needs to Lock Twice</h3>
+  <p>
+    A regular <code>std::mutex</code> has undefined behaviour if the same thread tries to lock it
+    a second time while already holding it — this is a self-deadlock. A
+    <code>std::recursive_mutex</code> allows the owning thread to lock it multiple times, tracking
+    the lock count. It unlocks fully only when unlock has been called as many times as lock.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>recursive_mutex.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;mutex&gt;</span>
+
+<span class="kw">class</span> <span class="cl">SafeCounter</span> {
+    <span class="kw">int</span> count_ = <span class="nm">0</span>;
+    std::recursive_mutex mtx_;   <span class="cm">// recursive — same thread may lock multiple times</span>
+
+<span class="kw">public</span>:
+    <span class="kw">void</span> <span class="fn">increment</span>() {
+        std::lock_guard&lt;std::recursive_mutex&gt; lock(mtx_);
+        ++count_;
+    }
+
+    <span class="cm">// incrementTwice calls increment() while ALREADY holding mtx_.
+    // With a regular mutex this would self-deadlock. recursive_mutex permits it.</span>
+    <span class="kw">void</span> <span class="fn">incrementTwice</span>() {
+        std::lock_guard&lt;std::recursive_mutex&gt; lock(mtx_);   <span class="cm">// lock count: 1</span>
+        <span class="fn">increment</span>();   <span class="cm">// lock count: 2 — same thread, allowed</span>
+        <span class="fn">increment</span>();   <span class="cm">// lock count: 3</span>
+    }   <span class="cm">// lock_guard destructs: count back to 0 — fully unlocked</span>
+
+    <span class="kw">int</span> <span class="fn">value</span>() {
+        std::lock_guard&lt;std::recursive_mutex&gt; lock(mtx_);
+        <span class="kw">return</span> count_;
+    }
+};
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="cl">SafeCounter</span> c;
+    c.incrementTwice();
+    c.increment();
+    std::cout &lt;&lt; <span class="st">"count = "</span> &lt;&lt; c.value() &lt;&lt; <span class="st">"\n"</span>;   <span class="cm">// 3</span>
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">count = 3</div>
+  </div>
+  <div class="callout warn">
+    <span class="callout-icon">⚠️</span>
+    <div class="callout-body">
+      <strong>Prefer Refactoring Over recursive_mutex</strong>
+      <code>recursive_mutex</code> is heavier than <code>mutex</code> (tracks lock depth). Its
+      need often signals a design issue: a private helper being called from both a public locked
+      method and directly. The cleaner fix is to split the helper into an unlocked internal
+      version called under a lock, and a public version that acquires the lock. Use
+      <code>recursive_mutex</code> only when you genuinely cannot avoid re-entry (e.g. a callback
+      that may be invoked recursively by third-party code).
+    </div>
+  </div>
+
+  <!-- ═══════════════ SHARED MUTEX ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem"><code>shared_mutex</code> — Reader-Writer Lock (C++17)</h3>
+  <p>
+    When many threads read shared data and writes are rare, a regular mutex is wasteful — it
+    serialises all readers even though simultaneous reads are safe. A
+    <code>std::shared_mutex</code> (C++17) allows <strong>multiple concurrent readers</strong>
+    <em>or</em> <strong>one exclusive writer</strong>, never both simultaneously.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>shared_mutex.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;shared_mutex&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;thread&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;vector&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;string&gt;</span>
+
+<span class="kw">class</span> <span class="cl">Config</span> {
+    std::string data_ = <span class="st">"initial"</span>;
+    <span class="kw">mutable</span> std::shared_mutex rw_;   <span class="cm">// mutable: read methods are const but still lock</span>
+
+<span class="kw">public</span>:
+    <span class="cm">// Read — shared lock: many threads can call this simultaneously</span>
+    std::string <span class="fn">get</span>() <span class="kw">const</span> {
+        std::shared_lock lock(rw_);   <span class="cm">// C++17 — shared (read) lock</span>
+        <span class="kw">return</span> data_;
+    }
+
+    <span class="cm">// Write — exclusive lock: only one thread at a time; blocks all readers</span>
+    <span class="kw">void</span> <span class="fn">set</span>(<span class="kw">const</span> std::string&amp; s) {
+        std::unique_lock lock(rw_);   <span class="cm">// exclusive (write) lock</span>
+        data_ = s;
+    }
+};
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="cl">Config</span> cfg;
+    std::vector&lt;std::thread&gt; readers;
+
+    <span class="cm">// Launch 4 readers — they all run concurrently with each other</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nm">0</span>; i &lt; <span class="nm">4</span>; ++i)
+        readers.emplace_back([&amp;, i]{
+            std::cout &lt;&lt; <span class="st">"Reader "</span> &lt;&lt; i &lt;&lt; <span class="st">": "</span> &lt;&lt; cfg.get() &lt;&lt; <span class="st">"\n"</span>;
+        });
+
+    std::thread writer([&amp;]{ cfg.set(<span class="st">"updated"</span>); });   <span class="cm">// exclusive</span>
+
+    writer.join();
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; t : readers) t.join();
+
+    std::cout &lt;&lt; <span class="st">"Final: "</span> &lt;&lt; cfg.get() &lt;&lt; <span class="st">"\n"</span>;
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output (reader order varies)</div>
+    <div class="output-body">Reader 0: initial
+Reader 1: initial
+Reader 2: initial
+Reader 3: initial
+Final: updated</div>
+  </div>
+  <table>
+    <tr><th>Lock type</th><th>RAII wrapper</th><th>Allows concurrent holders</th><th>Blocks</th></tr>
+    <tr><td>Exclusive (write)</td><td><code>std::unique_lock&lt;std::shared_mutex&gt;</code></td><td>No — exactly one</td><td>All other readers and writers</td></tr>
+    <tr><td>Shared (read)</td><td><code>std::shared_lock&lt;std::shared_mutex&gt;</code></td><td>Yes — unlimited readers simultaneously</td><td>Any writer waiting or active</td></tr>
+  </table>
+
+  <!-- ═══════════════ TIMED MUTEX / TRY_LOCK ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem"><code>timed_mutex</code>, <code>try_lock</code> — Non-Blocking &amp; Timeout Locking</h3>
+  <p>
+    Sometimes blocking indefinitely on a lock is unacceptable — a real-time control loop must
+    react within a deadline, and waiting forever for a mutex defeats the purpose.
+    <code>try_lock()</code> returns immediately, and <code>try_lock_for()</code> /
+    <code>try_lock_until()</code> respect a time budget.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>timed_mutex.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;mutex&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;thread&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;chrono&gt;</span>
+<span class="kw">using</span> <span class="kw">namespace</span> std::chrono_literals;
+
+std::timed_mutex tmtx;
+
+<span class="kw">void</span> <span class="fn">workerA</span>() {
+    std::lock_guard lock(tmtx);          <span class="cm">// holds the lock for 200ms</span>
+    std::cout &lt;&lt; <span class="st">"A: acquired lock\n"</span>;
+    std::this_thread::sleep_for(<span class="nm">200</span>ms);
+    std::cout &lt;&lt; <span class="st">"A: releasing\n"</span>;
+}
+
+<span class="kw">void</span> <span class="fn">workerB</span>() {
+    std::this_thread::sleep_for(<span class="nm">10</span>ms);     <span class="cm">// let A get in first</span>
+
+    <span class="cm">// try_lock — non-blocking: returns true if acquired, false if already held</span>
+    <span class="kw">if</span> (tmtx.try_lock()) {
+        std::cout &lt;&lt; <span class="st">"B: try_lock succeeded immediately\n"</span>;
+        tmtx.unlock();
+    } <span class="kw">else</span> {
+        std::cout &lt;&lt; <span class="st">"B: try_lock failed (A still holds it) — doing other work\n"</span>;
+    }
+
+    <span class="cm">// try_lock_for — wait up to 300ms before giving up</span>
+    <span class="kw">if</span> (tmtx.try_lock_for(<span class="nm">300</span>ms)) {
+        std::cout &lt;&lt; <span class="st">"B: acquired within timeout\n"</span>;
+        tmtx.unlock();
+    } <span class="kw">else</span> {
+        std::cout &lt;&lt; <span class="st">"B: timed out waiting\n"</span>;
+    }
+}
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    std::thread a(<span class="fn">workerA</span>), b(<span class="fn">workerB</span>);
+    a.join(); b.join();
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">A: acquired lock
+B: try_lock failed (A still holds it) — doing other work
+A: releasing
+B: acquired within timeout</div>
+  </div>
+
+  <!-- ═══════════════ STD::CALL_ONCE ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem"><code>std::call_once</code> — Thread-Safe One-Time Initialisation</h3>
+  <p>
+    <code>std::call_once</code> with a <code>std::once_flag</code> guarantees that a callable is
+    invoked exactly once across all threads, even if many threads race to call it simultaneously.
+    It is the standard alternative to double-checked locking for lazy initialisation.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>call_once.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;mutex&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;thread&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;vector&gt;</span>
+
+std::once_flag initFlag;
+<span class="kw">int</span> sharedResource = <span class="nm">0</span>;
+
+<span class="kw">void</span> <span class="fn">expensiveInit</span>() {
+    std::cout &lt;&lt; <span class="st">"Initialising resource (should print exactly once)\n"</span>;
+    sharedResource = <span class="nm">42</span>;
+}
+
+<span class="kw">void</span> <span class="fn">worker</span>(<span class="kw">int</span> id) {
+    std::call_once(initFlag, <span class="fn">expensiveInit</span>);   <span class="cm">// only ONE thread actually runs this</span>
+    std::cout &lt;&lt; <span class="st">"Thread "</span> &lt;&lt; id
+              &lt;&lt; <span class="st">" using resource: "</span> &lt;&lt; sharedResource &lt;&lt; <span class="st">"\n"</span>;
+}
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    std::vector&lt;std::thread&gt; threads;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nm">0</span>; i &lt; <span class="nm">5</span>; ++i) threads.emplace_back(<span class="fn">worker</span>, i);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; t : threads) t.join();
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output (thread order varies, but init line appears exactly once)</div>
+    <div class="output-body">Initialising resource (should print exactly once)
+Thread 0 using resource: 42
+Thread 1 using resource: 42
+Thread 2 using resource: 42
+Thread 3 using resource: 42
+Thread 4 using resource: 42</div>
+  </div>
+
+  <h4>Complete Mutex Taxonomy</h4>
+  <table>
+    <tr><th>Type</th><th>Key property</th><th>RAII wrapper</th><th>When to use</th></tr>
+    <tr><td><code>mutex</code></td><td>Basic exclusive lock; UB if same thread locks twice</td><td><code>lock_guard</code> / <code>unique_lock</code></td><td>Default choice — 95% of cases</td></tr>
+    <tr><td><code>recursive_mutex</code></td><td>Same thread can lock N times; must unlock N times</td><td><code>lock_guard&lt;recursive_mutex&gt;</code></td><td>When a locked method calls another locked method on the same object</td></tr>
+    <tr><td><code>timed_mutex</code></td><td>Supports <code>try_lock_for</code> / <code>try_lock_until</code></td><td><code>unique_lock</code></td><td>Real-time/deadline-sensitive code that must not block indefinitely</td></tr>
+    <tr><td><code>shared_mutex</code> (C++17)</td><td>Many concurrent readers OR one exclusive writer</td><td><code>shared_lock</code> (read) / <code>unique_lock</code> (write)</td><td>Read-heavy data structures where writes are rare</td></tr>
+    <tr><td><code>shared_timed_mutex</code> (C++14)</td><td>Shared + timed locking combined</td><td>Same as above</td><td>Reader-writer with timeout budget</td></tr>
+  </table>
+
+  <div class="callout arch">
+    <span class="callout-icon">🏛️</span>
+    <div class="callout-body">
+      <strong>Deadlock Prevention — The Canonical Rules</strong>
+      Deadlock requires four conditions simultaneously (Coffman): mutual exclusion, hold-and-wait,
+      no preemption, circular wait. Break the last one:
+      (1) Always acquire multiple mutexes in a consistent global order — or use
+      <code>std::scoped_lock(m1, m2)</code> (C++17), which uses a deadlock-free acquisition
+      algorithm internally.
+      (2) Never call user callbacks or external code while holding a lock — they may try to
+      acquire the same mutex.
+      (3) Keep critical sections as short as possible — do not do I/O or heavy computation
+      under a lock.
+    </div>
+  </div>
+
+  <div class="exercise-box interview">
+    <div class="exercise-title">🎯 Interview Questions</div>
+    <ul>
+      <li>What is a recursive mutex? When would you use it over a regular mutex, and why is it sometimes a code smell?</li>
+      <li>What is a reader-writer lock? When is <code>std::shared_mutex</code> better than <code>std::mutex</code>?</li>
+      <li>What does <code>try_lock()</code> return, and why would you use it instead of blocking <code>lock()</code>?</li>
+      <li>What does <code>std::call_once</code> guarantee, and how does it differ from a simple <code>if (!initialised)</code> check?</li>
+      <li>Name the four Coffman conditions for deadlock. Which one do <code>std::scoped_lock</code> and consistent lock ordering address?</li>
+    </ul>
   </div>
 
 
@@ -7365,6 +8273,473 @@ Click count: 2</div>
     </ul>
   </div>
 
+  <!-- ═══════════════ STRATEGY PATTERN ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem">4. Strategy Pattern</h3>
+  <p>
+    The Strategy pattern defines a <strong>family of algorithms</strong>, encapsulates each one
+    in its own class, and makes them interchangeable at runtime. The client code works through an
+    abstract interface — it doesn't know or care which concrete strategy is active. This is
+    the "open for extension, closed for modification" principle in its most direct form.
+  </p>
+  <p>
+    Real examples: a sorter that can use quicksort, mergesort, or timsort selected at runtime; a
+    payment processor that routes to Stripe, PayPal, or bank transfer; a navigation app that
+    switches between "fastest", "shortest", or "avoid tolls" routes.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>strategy_pattern.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;memory&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;vector&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;algorithm&gt;</span>
+
+<span class="cm">// ── Strategy interface ───────────────────────────────────────────────────</span>
+<span class="kw">class</span> <span class="cl">ISortStrategy</span> {
+<span class="kw">public</span>:
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="fn">sort</span>(std::vector&lt;<span class="kw">int</span>&gt;&amp; data) <span class="kw">const</span> = <span class="nm">0</span>;
+    <span class="kw">virtual</span> std::string <span class="fn">name</span>() <span class="kw">const</span> = <span class="nm">0</span>;
+    <span class="kw">virtual</span> ~<span class="cl">ISortStrategy</span>() = <span class="kw">default</span>;
+};
+
+<span class="cm">// ── Concrete strategies — each encapsulates one algorithm ────────────────</span>
+<span class="kw">class</span> <span class="cl">BubbleSort</span> : <span class="kw">public</span> <span class="cl">ISortStrategy</span> {
+<span class="kw">public</span>:
+    <span class="kw">void</span> <span class="fn">sort</span>(std::vector&lt;<span class="kw">int</span>&gt;&amp; d) <span class="kw">const</span> <span class="kw">override</span> {
+        <span class="kw">for</span> (<span class="kw">size_t</span> i = <span class="nm">0</span>; i &lt; d.size(); ++i)
+            <span class="kw">for</span> (<span class="kw">size_t</span> j = <span class="nm">0</span>; j + <span class="nm">1</span> &lt; d.size() - i; ++j)
+                <span class="kw">if</span> (d[j] &gt; d[j+<span class="nm">1</span>]) std::swap(d[j], d[j+<span class="nm">1</span>]);
+    }
+    std::string <span class="fn">name</span>() <span class="kw">const</span> <span class="kw">override</span> { <span class="kw">return</span> <span class="st">"BubbleSort (O(n²))"</span>; }
+};
+
+<span class="kw">class</span> <span class="cl">StdSort</span> : <span class="kw">public</span> <span class="cl">ISortStrategy</span> {
+<span class="kw">public</span>:
+    <span class="kw">void</span> <span class="fn">sort</span>(std::vector&lt;<span class="kw">int</span>&gt;&amp; d) <span class="kw">const</span> <span class="kw">override</span> { std::sort(d.begin(), d.end()); }
+    std::string <span class="fn">name</span>() <span class="kw">const</span> <span class="kw">override</span> { <span class="kw">return</span> <span class="st">"std::sort (introsort, O(n log n))"</span>; }
+};
+
+<span class="cm">// ── Context — works through the interface, unaware of concrete strategy ──</span>
+<span class="kw">class</span> <span class="cl">DataProcessor</span> {
+    std::unique_ptr&lt;<span class="cl">ISortStrategy</span>&gt; strategy_;
+<span class="kw">public</span>:
+    <span class="kw">explicit</span> <span class="cl">DataProcessor</span>(std::unique_ptr&lt;<span class="cl">ISortStrategy</span>&gt; s)
+        : strategy_(std::move(s)) {}
+
+    <span class="cm">// swap strategy at runtime — no change to DataProcessor code required</span>
+    <span class="kw">void</span> <span class="fn">setStrategy</span>(std::unique_ptr&lt;<span class="cl">ISortStrategy</span>&gt; s) { strategy_ = std::move(s); }
+
+    <span class="kw">void</span> <span class="fn">process</span>(std::vector&lt;<span class="kw">int</span>&gt; data) {
+        std::cout &lt;&lt; <span class="st">"Using: "</span> &lt;&lt; strategy_-&gt;name() &lt;&lt; <span class="st">"\n"</span>;
+        strategy_-&gt;sort(data);
+        <span class="kw">for</span> (<span class="kw">int</span> v : data) std::cout &lt;&lt; v &lt;&lt; <span class="st">" "</span>;
+        std::cout &lt;&lt; <span class="st">"\n"</span>;
+    }
+};
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    std::vector&lt;<span class="kw">int</span>&gt; data = {<span class="nm">5</span>, <span class="nm">2</span>, <span class="nm">8</span>, <span class="nm">1</span>, <span class="nm">9</span>, <span class="nm">3</span>};
+
+    <span class="cl">DataProcessor</span> proc(std::make_unique&lt;<span class="cl">BubbleSort</span>&gt;());
+    proc.process(data);
+
+    proc.setStrategy(std::make_unique&lt;<span class="cl">StdSort</span>&gt;());   <span class="cm">// swap at runtime</span>
+    proc.process(data);
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">Using: BubbleSort (O(n²))
+1 2 3 5 8 9
+Using: std::sort (introsort, O(n log n))
+1 2 3 5 8 9</div>
+  </div>
+  <table>
+    <tr><th>Aspect</th><th>Detail</th></tr>
+    <tr><td>Category</td><td>Behavioral</td></tr>
+    <tr><td>Intent</td><td>"Define a family of algorithms, encapsulate each, make them interchangeable"</td></tr>
+    <tr><td>Key mechanism</td><td>Context holds a pointer to the strategy interface; concrete strategies plug in via that interface</td></tr>
+    <tr><td>Adding a new algorithm</td><td>Create a new strategy class — zero changes to Context or existing strategies</td></tr>
+    <tr><td>C++ implementation note</td><td>Modern C++ can also use <code>std::function</code> as the strategy holder when behavior is simple (a single function), avoiding the overhead of a virtual class hierarchy</td></tr>
+  </table>
+
+  <!-- ═══════════════ COMMAND PATTERN ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem">5. Command Pattern</h3>
+  <p>
+    The Command pattern encapsulates a <strong>request as an object</strong>. This turns an
+    operation (and its parameters) into a first-class value that can be stored, queued, logged,
+    undone, and replayed. A GUI's undo/redo stack, a job queue, and a transactional log are all
+    Command pattern applications.
+  </p>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>command_pattern.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;memory&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;vector&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;stack&gt;</span>
+
+<span class="cm">// ── Command interface ────────────────────────────────────────────────────</span>
+<span class="kw">class</span> <span class="cl">ICommand</span> {
+<span class="kw">public</span>:
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="fn">execute</span>() = <span class="nm">0</span>;
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="fn">undo</span>()    = <span class="nm">0</span>;
+    <span class="kw">virtual</span> ~<span class="cl">ICommand</span>()   = <span class="kw">default</span>;
+};
+
+<span class="cm">// ── Receiver — the object that knows how to do the actual work ───────────</span>
+<span class="kw">class</span> <span class="cl">TextEditor</span> {
+    std::string text_;
+<span class="kw">public</span>:
+    <span class="kw">void</span> <span class="fn">append</span>(<span class="kw">const</span> std::string&amp; s)    { text_ += s; }
+    <span class="kw">void</span> <span class="fn">removeLast</span>(<span class="kw">int</span> n)               { text_ = text_.substr(<span class="nm">0</span>, text_.size() - n); }
+    <span class="kw">const</span> std::string&amp; <span class="fn">text</span>() <span class="kw">const</span>      { <span class="kw">return</span> text_; }
+};
+
+<span class="cm">// ── Concrete command — bundles receiver + action + undo data ─────────────</span>
+<span class="kw">class</span> <span class="cl">AppendCommand</span> : <span class="kw">public</span> <span class="cl">ICommand</span> {
+    <span class="cl">TextEditor</span>&amp; editor_;
+    std::string  text_;
+<span class="kw">public</span>:
+    <span class="cl">AppendCommand</span>(<span class="cl">TextEditor</span>&amp; e, std::string t) : editor_(e), text_(std::move(t)) {}
+    <span class="kw">void</span> <span class="fn">execute</span>() <span class="kw">override</span> { editor_.append(text_); }
+    <span class="kw">void</span> <span class="fn">undo</span>()    <span class="kw">override</span> { editor_.removeLast(<span class="kw">static_cast</span>&lt;<span class="kw">int</span>&gt;(text_.size())); }
+};
+
+<span class="cm">// ── Invoker — stores and executes commands; drives the undo stack ────────</span>
+<span class="kw">class</span> <span class="cl">CommandHistory</span> {
+    std::stack&lt;std::unique_ptr&lt;<span class="cl">ICommand</span>&gt;&gt; history_;
+<span class="kw">public</span>:
+    <span class="kw">void</span> <span class="fn">execute</span>(std::unique_ptr&lt;<span class="cl">ICommand</span>&gt; cmd) {
+        cmd-&gt;execute();
+        history_.push(std::move(cmd));
+    }
+    <span class="kw">void</span> <span class="fn">undo</span>() {
+        <span class="kw">if</span> (history_.empty()) { std::cout &lt;&lt; <span class="st">"Nothing to undo.\n"</span>; <span class="kw">return</span>; }
+        history_.top()-&gt;undo();
+        history_.pop();
+    }
+};
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="cl">TextEditor</span>     editor;
+    <span class="cl">CommandHistory</span> history;
+
+    history.execute(std::make_unique&lt;<span class="cl">AppendCommand</span>&gt;(editor, <span class="st">"Hello"</span>));
+    history.execute(std::make_unique&lt;<span class="cl">AppendCommand</span>&gt;(editor, <span class="st">", World"</span>));
+    std::cout &lt;&lt; <span class="st">"After 2 appends: \""</span> &lt;&lt; editor.text() &lt;&lt; <span class="st">"\"\n"</span>;
+
+    history.undo();
+    std::cout &lt;&lt; <span class="st">"After undo:      \""</span> &lt;&lt; editor.text() &lt;&lt; <span class="st">"\"\n"</span>;
+
+    history.undo();
+    std::cout &lt;&lt; <span class="st">"After undo:      \""</span> &lt;&lt; editor.text() &lt;&lt; <span class="st">"\"\n"</span>;
+
+    history.undo();   <span class="cm">// nothing left</span>
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">After 2 appends: "Hello, World"
+After undo:      "Hello"
+After undo:      ""
+Nothing to undo.</div>
+  </div>
+  <table>
+    <tr><th>Role</th><th>Who</th><th>Responsibility</th></tr>
+    <tr><td>Command</td><td><code>ICommand</code> / <code>AppendCommand</code></td><td>Encapsulates the request + all data needed to execute and undo it</td></tr>
+    <tr><td>Receiver</td><td><code>TextEditor</code></td><td>The object that knows how to actually perform the work</td></tr>
+    <tr><td>Invoker</td><td><code>CommandHistory</code></td><td>Stores commands, drives execute/undo — knows nothing about what commands do</td></tr>
+    <tr><td>Client</td><td><code>main()</code></td><td>Creates commands, wires up receiver, asks invoker to execute</td></tr>
+  </table>
+
+  <!-- ═══════════════ DEPENDENCY INJECTION ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem">6. Dependency Injection</h3>
+  <p>
+    Dependency Injection (DI) is not a classical GoF pattern, but it is arguably the most
+    important architectural pattern in production C++. Instead of a class constructing its own
+    dependencies, those dependencies are <strong>provided from outside</strong> — through a
+    constructor, a setter, or a function parameter. This makes classes:
+  </p>
+  <ul>
+    <li><strong>Testable</strong> — inject a mock in tests, the real implementation in production</li>
+    <li><strong>Decoupled</strong> — the class depends on an interface, not a concrete class</li>
+    <li><strong>Composable</strong> — wire different implementations together without touching the class</li>
+  </ul>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>dependency_injection.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;memory&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;string&gt;</span>
+
+<span class="cm">// ── Abstraction (interface) ────────────────────────────────────────────────</span>
+<span class="kw">class</span> <span class="cl">ILogger</span> {
+<span class="kw">public</span>:
+    <span class="kw">virtual</span> <span class="kw">void</span> <span class="fn">log</span>(<span class="kw">const</span> std::string&amp; msg) = <span class="nm">0</span>;
+    <span class="kw">virtual</span> ~<span class="cl">ILogger</span>() = <span class="kw">default</span>;
+};
+
+<span class="cm">// ── Concrete implementations ───────────────────────────────────────────────</span>
+<span class="kw">class</span> <span class="cl">ConsoleLogger</span> : <span class="kw">public</span> <span class="cl">ILogger</span> {
+<span class="kw">public</span>:
+    <span class="kw">void</span> <span class="fn">log</span>(<span class="kw">const</span> std::string&amp; msg) <span class="kw">override</span> {
+        std::cout &lt;&lt; <span class="st">"[CONSOLE] "</span> &lt;&lt; msg &lt;&lt; <span class="st">"\n"</span>;
+    }
+};
+
+<span class="kw">class</span> <span class="cl">SilentLogger</span> : <span class="kw">public</span> <span class="cl">ILogger</span> {   <span class="cm">// used in tests — suppresses all output</span>
+<span class="kw">public</span>:
+    <span class="kw">void</span> <span class="fn">log</span>(<span class="kw">const</span> std::string&amp;) <span class="kw">override</span> {}
+};
+
+<span class="cm">// ── Consumer — receives its dependency through the constructor ─────────────</span>
+<span class="kw">class</span> <span class="cl">PaymentService</span> {
+    std::shared_ptr&lt;<span class="cl">ILogger</span>&gt; logger_;   <span class="cm">// depends on the INTERFACE, not a concrete class</span>
+<span class="kw">public</span>:
+    <span class="kw">explicit</span> <span class="cl">PaymentService</span>(std::shared_ptr&lt;<span class="cl">ILogger</span>&gt; logger)
+        : logger_(std::move(logger)) {}
+
+    <span class="kw">void</span> <span class="fn">pay</span>(<span class="kw">double</span> amount) {
+        logger_-&gt;log(<span class="st">"Processing payment: $"</span> + std::to_string(amount));
+        <span class="cm">// ... real payment logic ...</span>
+        logger_-&gt;log(<span class="st">"Payment complete"</span>);
+    }
+};
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="cm">// Production: inject the real logger</span>
+    <span class="cl">PaymentService</span> prod(std::make_shared&lt;<span class="cl">ConsoleLogger</span>&gt;());
+    prod.pay(<span class="nm">99.99</span>);
+
+    std::cout &lt;&lt; <span class="st">"\n--- test run (no output expected) ---\n"</span>;
+
+    <span class="cm">// Test: inject the silent logger — same PaymentService class, no modification needed</span>
+    <span class="cl">PaymentService</span> test(std::make_shared&lt;<span class="cl">SilentLogger</span>&gt;());
+    test.pay(<span class="nm">0.01</span>);   <span class="cm">// runs correctly, produces no console noise during unit tests</span>
+
+    std::cout &lt;&lt; <span class="st">"Test run complete (silent logger swallowed output as expected)\n"</span>;
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">[CONSOLE] Processing payment: $99.990000
+[CONSOLE] Payment complete
+
+--- test run (no output expected) ---
+Test run complete (silent logger swallowed output as expected)</div>
+  </div>
+
+  <h4>Three Forms of Dependency Injection</h4>
+  <table>
+    <tr><th>Form</th><th>Mechanism</th><th>When to prefer</th></tr>
+    <tr><td><strong>Constructor injection</strong></td><td>Dependency passed in constructor — dependency is mandatory, set once for the object's lifetime</td><td>Default — makes dependencies explicit in the type signature; object always in a valid state</td></tr>
+    <tr><td><strong>Setter injection</strong></td><td>Dependency set via a <code>setLogger()</code> method after construction</td><td>When dependency is optional or needs to change at runtime (more fragile — object may be used before dependency is set)</td></tr>
+    <tr><td><strong>Parameter injection</strong></td><td>Dependency passed directly as a function parameter</td><td>When only one or two methods need the dependency; avoids storing it as a member</td></tr>
+  </table>
+
+  <div class="callout arch">
+    <span class="callout-icon">🏛️</span>
+    <div class="callout-body">
+      <strong>DI vs Singleton — The Core Trade-off</strong>
+      A Singleton gives you global access with hidden coupling — any code can silently depend on
+      it, and you cannot swap the implementation in tests without modifying the class itself.
+      Dependency Injection makes every dependency visible in the function signature or constructor,
+      forces you to think about what each class actually needs, and makes swapping implementations
+      (real vs mock, production vs test) trivial. In production C++, DI nearly always produces
+      better-designed, more testable code than the Singleton pattern for the same problem.
+    </div>
+  </div>
+
+  <!-- ═══════════════ DECORATOR PATTERN ═══════════════ -->
+  <h3 style="font-size:1.4rem;color:var(--accent3);border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-top:3rem">7. Decorator Pattern</h3>
+  <p>
+    The Decorator pattern <strong>wraps an object inside another object that shares the same
+    interface</strong>, adding new behaviour transparently before or after delegating to the
+    wrapped object. It is the composable alternative to subclassing for extending behaviour —
+    you can stack decorators freely at runtime without an exponential explosion of subclasses.
+  </p>
+  <p>
+    Real examples: a logger that wraps a file writer and adds timestamps; an HTTP middleware
+    chain that wraps a handler adding auth, then compression, then caching; a UI widget that
+    wraps another widget and adds a scrollbar or a border.
+  </p>
+
+  <h4>The Problem Decorator Solves</h4>
+  <p>
+    Suppose you have a <code>TextRenderer</code> and you need variants: bold, italic, bold+italic,
+    with-border, bold+border, italic+border, bold+italic+border ... Inheritance produces
+    <strong>2<sup>N</sup> subclasses</strong> for N independent features. Decorator produces
+    <strong>N small wrapper classes</strong> you stack as needed.
+  </p>
+
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>decorator_pattern.cpp</span><span class="lang">C++</span></div>
+    <pre><code><span class="pp">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;memory&gt;</span>
+<span class="pp">#include</span> <span class="st">&lt;string&gt;</span>
+
+<span class="cm">// ── Component interface — shared by concrete component AND all decorators ──</span>
+<span class="kw">class</span> <span class="cl">ITextRenderer</span> {
+<span class="kw">public</span>:
+    <span class="kw">virtual</span> std::string <span class="fn">render</span>(<span class="kw">const</span> std::string&amp; text) <span class="kw">const</span> = <span class="nm">0</span>;
+    <span class="kw">virtual</span> ~<span class="cl">ITextRenderer</span>() = <span class="kw">default</span>;
+};
+
+<span class="cm">// ── Concrete component — the base object being decorated ─────────────────</span>
+<span class="kw">class</span> <span class="cl">PlainRenderer</span> : <span class="kw">public</span> <span class="cl">ITextRenderer</span> {
+<span class="kw">public</span>:
+    std::string <span class="fn">render</span>(<span class="kw">const</span> std::string&amp; text) <span class="kw">const</span> <span class="kw">override</span> { <span class="kw">return</span> text; }
+};
+
+<span class="cm">// ── Base decorator — holds a reference to the wrapped component ───────────</span>
+<span class="kw">class</span> <span class="cl">RendererDecorator</span> : <span class="kw">public</span> <span class="cl">ITextRenderer</span> {
+<span class="kw">protected</span>:
+    std::unique_ptr&lt;<span class="cl">ITextRenderer</span>&gt; inner_;    <span class="cm">// the wrapped component or another decorator</span>
+<span class="kw">public</span>:
+    <span class="kw">explicit</span> <span class="cl">RendererDecorator</span>(std::unique_ptr&lt;<span class="cl">ITextRenderer</span>&gt; inner)
+        : inner_(std::move(inner)) {}
+};
+
+<span class="cm">// ── Concrete decorator 1: wraps text in **bold markers** ─────────────────</span>
+<span class="kw">class</span> <span class="cl">BoldDecorator</span> : <span class="kw">public</span> <span class="cl">RendererDecorator</span> {
+<span class="kw">public</span>:
+    <span class="kw">using</span> <span class="cl">RendererDecorator</span>::<span class="cl">RendererDecorator</span>;   <span class="cm">// inherit constructor</span>
+    std::string <span class="fn">render</span>(<span class="kw">const</span> std::string&amp; text) <span class="kw">const</span> <span class="kw">override</span> {
+        <span class="kw">return</span> <span class="st">"**"</span> + inner_-&gt;render(text) + <span class="st">"**"</span>;  <span class="cm">// delegate, then add bold</span>
+    }
+};
+
+<span class="cm">// ── Concrete decorator 2: wraps text in _italic markers_ ─────────────────</span>
+<span class="kw">class</span> <span class="cl">ItalicDecorator</span> : <span class="kw">public</span> <span class="cl">RendererDecorator</span> {
+<span class="kw">public</span>:
+    <span class="kw">using</span> <span class="cl">RendererDecorator</span>::<span class="cl">RendererDecorator</span>;
+    std::string <span class="fn">render</span>(<span class="kw">const</span> std::string&amp; text) <span class="kw">const</span> <span class="kw">override</span> {
+        <span class="kw">return</span> <span class="st">"_"</span> + inner_-&gt;render(text) + <span class="st">"_"</span>;
+    }
+};
+
+<span class="cm">// ── Concrete decorator 3: adds a border ──────────────────────────────────</span>
+<span class="kw">class</span> <span class="cl">BorderDecorator</span> : <span class="kw">public</span> <span class="cl">RendererDecorator</span> {
+<span class="kw">public</span>:
+    <span class="kw">using</span> <span class="cl">RendererDecorator</span>::<span class="cl">RendererDecorator</span>;
+    std::string <span class="fn">render</span>(<span class="kw">const</span> std::string&amp; text) <span class="kw">const</span> <span class="kw">override</span> {
+        <span class="kw">return</span> <span class="st">"[ "</span> + inner_-&gt;render(text) + <span class="st">" ]"</span>;
+    }
+};
+
+<span class="cm">// helper: creates a renderer from a stack of decorators</span>
+<span class="kw">template</span>&lt;<span class="kw">typename</span> <span class="cl">Decorator</span>, <span class="kw">typename</span>... <span class="ty">Rest</span>&gt;
+std::unique_ptr&lt;<span class="cl">ITextRenderer</span>&gt; <span class="fn">make</span>(std::unique_ptr&lt;<span class="cl">ITextRenderer</span>&gt; base) {
+    <span class="kw">return</span> std::make_unique&lt;<span class="cl">Decorator</span>&gt;(std::move(base));
+}
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="kw">auto</span> <span class="fn">print</span> = [](std::string label, <span class="kw">const</span> <span class="cl">ITextRenderer</span>&amp; r) {
+        std::cout &lt;&lt; label &lt;&lt; r.render(<span class="st">"Hello"</span>) &lt;&lt; <span class="st">"\n"</span>;
+    };
+
+    <span class="cm">// Plain — no decorators</span>
+    <span class="fn">print</span>(<span class="st">"Plain:              "</span>, <span class="cl">PlainRenderer</span>{});
+
+    <span class="cm">// Bold only</span>
+    <span class="fn">print</span>(<span class="st">"Bold:               "</span>,
+          <span class="cl">BoldDecorator</span>(std::make_unique&lt;<span class="cl">PlainRenderer</span>&gt;()));
+
+    <span class="cm">// Italic + Bold — order matters: outer decorator runs first</span>
+    <span class="fn">print</span>(<span class="st">"Italic(Bold):       "</span>,
+          <span class="cl">ItalicDecorator</span>(std::make_unique&lt;<span class="cl">BoldDecorator</span>&gt;(
+              std::make_unique&lt;<span class="cl">PlainRenderer</span>&gt;())));
+
+    <span class="cm">// Border + Italic + Bold — three layers stacked, zero subclasses</span>
+    <span class="fn">print</span>(<span class="st">"Border(Italic(Bold)): "</span>,
+          <span class="cl">BorderDecorator</span>(std::make_unique&lt;<span class="cl">ItalicDecorator</span>&gt;(
+              std::make_unique&lt;<span class="cl">BoldDecorator</span>&gt;(
+                  std::make_unique&lt;<span class="cl">PlainRenderer</span>&gt;()))));
+    <span class="kw">return</span> <span class="nm">0</span>;
+}</code></pre>
+  </div>
+  <div class="output-wrap">
+    <div class="output-header">Expected Output</div>
+    <div class="output-body">Plain:              Hello
+Bold:               **Hello**
+Italic(Bold):       _**Hello**_
+Border(Italic(Bold)): [ _**Hello**_ ]</div>
+  </div>
+
+  <h4>How the Wrapping Chain Works</h4>
+  <div class="code-wrap">
+    <div class="code-header"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span>Decorator Call Chain</span><span class="lang">ASCII</span></div>
+    <pre><code>render("Hello") called on BorderDecorator
+  └─→ BorderDecorator::render  →  "[ " + inner_->render("Hello") + " ]"
+        └─→ ItalicDecorator::render  →  "_" + inner_->render("Hello") + "_"
+              └─→ BoldDecorator::render  →  "**" + inner_->render("Hello") + "**"
+                    └─→ PlainRenderer::render  →  "Hello"
+
+Result bubbles back up:  "Hello" → "**Hello**" → "_**Hello**_" → "[ _**Hello**_ ]"</code></pre>
+  </div>
+
+  <table>
+    <tr><th>Aspect</th><th>Detail</th></tr>
+    <tr><td>Category</td><td>Structural</td></tr>
+    <tr><td>Intent</td><td>"Attach additional responsibilities to an object dynamically; provides a flexible alternative to subclassing"</td></tr>
+    <tr><td>Key rule</td><td>Every decorator implements the <em>same interface</em> as the component it wraps, so callers cannot tell the difference</td></tr>
+    <tr><td>Adding a new feature</td><td>Write one new decorator class — zero changes to existing classes</td></tr>
+    <tr><td>vs inheritance</td><td>Inheritance bakes behaviour in at compile time; Decorator composes behaviour at runtime with any combination</td></tr>
+    <tr><td>Stacking order</td><td>Outermost decorator runs first and calls inward — think of it as an onion of wrappers</td></tr>
+  </table>
+
+  <div class="callout tip">
+    <span class="callout-icon">💡</span>
+    <div class="callout-body">
+      <strong>Modern C++ Shorthand — <code>std::function</code> Decorator</strong>
+      When the "interface" is just a single function, you can decorate with lambdas wrapping
+      <code>std::function</code> instead of building a class hierarchy. This is exactly what
+      Express.js/Koa middleware does in JavaScript — and what C++ HTTP frameworks like Crow or
+      Drogon do for request pipelines.
+      <br><br>
+      <code>auto timed = [fn](auto req){ auto t=now(); auto r=fn(req); log(now()-t); return r; };</code>
+    </div>
+  </div>
+
+  <div class="callout arch">
+    <span class="callout-icon">🏛️</span>
+    <div class="callout-body">
+      <strong>Decorator vs Strategy — Key Distinction</strong>
+      Strategy <em>replaces</em> the core algorithm — you swap one whole implementation for another.
+      Decorator <em>extends</em> the core object — you layer new behaviour on top without touching
+      what is inside. Use Strategy when "how" changes; use Decorator when you want to add
+      "what" around a stable core.
+    </div>
+  </div>
+
+  <h4>Design Patterns — Summary Table</h4>
+  <table>
+    <tr><th>Pattern</th><th>Category</th><th>Core intent</th><th>Key C++ mechanism</th></tr>
+    <tr><td>Singleton</td><td>Creational</td><td>Exactly one instance; global access point</td><td>Function-local static + deleted copy/move</td></tr>
+    <tr><td>Factory</td><td>Creational</td><td>Create objects without exposing concrete types</td><td>Virtual dispatch + <code>unique_ptr</code></td></tr>
+    <tr><td>Observer</td><td>Behavioral</td><td>Notify many dependents automatically on state change</td><td>Interface list + notification loop</td></tr>
+    <tr><td>Strategy</td><td>Behavioral</td><td>Swap algorithms at runtime without touching the context</td><td>Interface pointer swapped via <code>setStrategy()</code></td></tr>
+    <tr><td>Command</td><td>Behavioral</td><td>Encapsulate a request as an object; enable undo/queue</td><td>Interface with <code>execute()</code>/<code>undo()</code>; invoker stack</td></tr>
+    <tr><td>Decorator</td><td>Structural</td><td>Add responsibilities to an object by wrapping it in a same-interface class</td><td>Wrapper class holds <code>unique_ptr&lt;Interface&gt;</code>; chains delegate calls</td></tr>
+    <tr><td>Dependency Injection</td><td>Architectural</td><td>Supply dependencies externally; decouple and enable testing</td><td>Constructor parameter + abstract interface</td></tr>
+  </table>
+
+  <div class="exercise-box interview">
+    <div class="exercise-title">🎯 Interview Questions</div>
+    <ul>
+      <li>How does the Strategy pattern differ from simple function pointers? When would you choose one over the other?</li>
+      <li>In the Command pattern, what are the four roles (command, receiver, invoker, client)?</li>
+      <li>What does <code>execute()</code> and <code>undo()</code> on a command need to store to make undo work correctly?</li>
+      <li>What is Dependency Injection? How is it different from a Singleton?</li>
+      <li>Why does constructor injection produce better-designed code than getter injection?</li>
+      <li>What problem does the Decorator pattern solve that inheritance cannot solve cleanly?</li>
+      <li>Why must every Decorator implement the same interface as the component it wraps?</li>
+      <li>What is the difference between Decorator and Strategy?</li>
+      <li>Which of Singleton, Factory, Observer, Strategy, Command, Decorator, DI are creational, structural, and behavioral?</li>
+    </ul>
+  </div>
+
 </section>
 
 <section class="topic" id="t14">
@@ -8073,7 +9448,7 @@ int main() {
 (function(){
   'use strict';
 
-  const TOPIC_IDS = ['t1','t2','t3','t4','t5','t6','t7','t8','t9','t10','t11','t12','t13'];
+  const TOPIC_IDS = ['t1','t2','t3','t4','t5','t6','t7','t8','t9','t10','t11','t12','t13','t14','t15'];
   const STORAGE_KEY = 'cppmastery_progress_v1';
   const THEME_KEY = 'cppmastery_theme';
 
@@ -8138,21 +9513,23 @@ int main() {
     saveProgress(progress);
     updateProgressUI();
   }
-  window.__toggleTopicDone = toggleDone;
-
   /* Inject a "mark complete" control + meta bar into each topic header */
   const TOPIC_META = {
-    t2:{difficulty:2, time:'35 min', prereq:'None'},
+    t1:{difficulty:2, time:'40 min', prereq:'None'},
+    t2:{difficulty:2, time:'35 min', prereq:'Core Language'},
     t3:{difficulty:2, time:'25 min', prereq:'Pointers & Memory'},
     t4:{difficulty:3, time:'70 min', prereq:'Pointers & Memory'},
     t5:{difficulty:2, time:'25 min', prereq:'OOP'},
-    t6:{difficulty:3, time:'30 min', prereq:'OOP'},
+    t6:{difficulty:3, time:'35 min', prereq:'OOP'},
     t7:{difficulty:3, time:'55 min', prereq:'Templates'},
-    t8:{difficulty:4, time:'40 min', prereq:'Smart Pointers'},
+    t8:{difficulty:4, time:'50 min', prereq:'Smart Pointers'},
     t9:{difficulty:2, time:'20 min', prereq:'Pointers & Memory'},
     t10:{difficulty:2, time:'20 min', prereq:'Function Pointers'},
     t11:{difficulty:3, time:'45 min', prereq:'Templates, STL'},
     t12:{difficulty:4, time:'60 min', prereq:'STL, OOP'},
+    t13:{difficulty:3, time:'45 min', prereq:'OOP, Templates'},
+    t14:{difficulty:3, time:'30 min', prereq:'Pointers & Memory'},
+    t15:{difficulty:4, time:'35 min', prereq:'Bit Manipulation'},
   };
 
   TOPIC_IDS.forEach(id => {
